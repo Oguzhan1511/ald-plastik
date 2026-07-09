@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // To switch to PostgreSQL in production, change provider to "postgresql"
+  // and update DATABASE_URL in .env accordingly.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Hammadde (Raw Material)
+// ─────────────────────────────────────────────
+model RawMaterial {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  unit            String   // gram, kg, litre, adet, vb.
+  currentStock    Decimal  @default(0)
+  criticalLevel   Decimal? // Opsiyonel — bu seviyenin altına düşünce uyarı
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // İlişkiler
+  recipes         Recipe[]
+  stockMovements  StockMovement[]
+
+  @@map("raw_materials")
+}
+
+// ─────────────────────────────────────────────
+// Ürün (Product)
+// ─────────────────────────────────────────────
+model Product {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  unitWeight       Decimal? // Bir adedinin toplam gramajı (bilgi amaçlı)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // İlişkiler
+  recipes          Recipe[]
+  productionRecords ProductionRecord[]
+
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────
+// Reçete / BOM Satırı (Recipe)
+// Bir ürün için birden fazla hammadde-miktar ikilisi
+// ─────────────────────────────────────────────
+model Recipe {
+  id               String      @id @default(cuid())
+  productId        String
+  rawMaterialId    String
+  quantityPerUnit  Decimal     // Bir adet ürün için gereken hammadde miktarı
+  createdAt        DateTime    @default(now())
+
+  product          Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rawMaterial      RawMaterial @relation(fields: [rawMaterialId], references: [id], onDelete: Restrict)
+
+  // Her üründe aynı hammadde sadece bir kez olabilir
+  @@unique([productId, rawMaterialId])
+  @@map("recipes")
+}
+
+// ─────────────────────────────────────────────
+// Stok Hareketi (Stock Movement)
+// MovementType values: GIRIS | URETIM_CIKISI | MANUEL_CIKIS | DUZELTME
+// SQLite does not support enums — type is enforced at application layer
+// ─────────────────────────────────────────────
+model StockMovement {
+  id                  String         @id @default(cuid())
+  rawMaterialId       String
+  type                String         // GIRIS | URETIM_CIKISI | MANUEL_CIKIS | DUZELTME
+  amount              Decimal        // Pozitif = giriş, negatif = çıkış (tip'e göre yorum)
+  date                DateTime       @default(now())
+  description         String?
+  productionRecordId  String?        // Üretimden geldiyse bağlantı
+
+  rawMaterial         RawMaterial    @relation(fields: [rawMaterialId], references: [id], onDelete: Restrict)
+  productionRecord    ProductionRecord? @relation(fields: [productionRecordId], references: [id], onDelete: SetNull)
+
+  @@map("stock_movements")
+}
+
+// ─────────────────────────────────────────────
+// Üretim Kaydı (Production Record)
+// ─────────────────────────────────────────────
+model ProductionRecord {
+  id            String   @id @default(cuid())
+  productId     String
+  quantity      Int      // Üretilen adet
+  date          DateTime @default(now())
+  description   String?
+
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  stockMovements StockMovement[]
+
+  @@map("production_records")
+}
