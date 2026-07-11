@@ -41,12 +41,15 @@ export async function createProductionRecord(formData: FormData) {
 
   const date = dateStr ? new Date(dateStr) : new Date();
 
-  // Ürün ve reçetelerini al
+  // Ürün ve reçetelerini al — hem hammadde hem alt ürün bileşenleri dahil
   const product = await prisma.product.findUnique({
     where: { id: productId },
     include: {
       recipes: {
-        include: { rawMaterial: true },
+        include: {
+          rawMaterial: true,
+          componentProduct: true,
+        },
       },
     },
   });
@@ -56,16 +59,24 @@ export async function createProductionRecord(formData: FormData) {
     throw new Error(`"${product.name}" ürünü için reçete tanımlanmamış. Önce /urunler sayfasından reçete ekleyin.`);
   }
 
+  // Sadece Hammadde satırlarını stok kontrolüne al
+  // (Alt Ürün satırları için miktar bilgisi henüz elle girilmeden 0 olabilir)
+  const hammaddeRecipes = product.recipes.filter((r) => r.rawMaterialId && r.rawMaterial);
+
   // ─── Stok Yeterlilik Kontrolü (işlem öncesi — kullanıcıya hızlı geri bildirim) ───
   const stockErrors: string[] = [];
 
-  for (const recipe of product.recipes) {
-    const required = new Decimal(recipe.quantityPerUnit).mul(quantity);
-    const available = new Decimal(recipe.rawMaterial.currentStock);
+  for (const recipe of hammaddeRecipes) {
+    const rawMaterial = recipe.rawMaterial!;
+    if (new Decimal(recipe.quantityPerUnit).equals(0)) continue; // miktar 0 ise atla
+
+    const wasteFactor = new Decimal(1).add(new Decimal(recipe.wastePercentage));
+    const required = new Decimal(recipe.quantityPerUnit).mul(quantity).mul(wasteFactor);
+    const available = new Decimal(rawMaterial.currentStock);
 
     if (available.lessThan(required)) {
       stockErrors.push(
-        `Yetersiz stok: ${recipe.rawMaterial.name} — Gereken: ${required.toFixed(2)} ${recipe.rawMaterial.unit}, Mevcut: ${available.toFixed(2)} ${recipe.rawMaterial.unit}`
+        `Yetersiz stok: ${rawMaterial.name} — Gereken: ${required.toFixed(2)} ${rawMaterial.unit}, Mevcut: ${available.toFixed(2)} ${rawMaterial.unit}`
       );
     }
   }
@@ -86,16 +97,18 @@ export async function createProductionRecord(formData: FormData) {
       },
     });
 
-    // 2. Her hammadde için stok düş + hareket kaydet
-    // updateMany + where: { currentStock: { gte: deductAmount } }
-    // ile transaction içinde de race condition'a karşı ikinci kontrol yapılır.
+    // 2. Hammadde reçete satırları için stok düş + hareket kaydet
     const movements = [];
-    for (const recipe of product.recipes) {
-      const deductAmount = new Decimal(recipe.quantityPerUnit).mul(quantity);
+    for (const recipe of hammaddeRecipes) {
+      const rawMaterial = recipe.rawMaterial!;
+      if (new Decimal(recipe.quantityPerUnit).equals(0)) continue;
+
+      const wasteFactor = new Decimal(1).add(new Decimal(recipe.wastePercentage));
+      const deductAmount = new Decimal(recipe.quantityPerUnit).mul(quantity).mul(wasteFactor);
 
       const updateResult = await tx.rawMaterial.updateMany({
         where: {
-          id: recipe.rawMaterialId,
+          id: recipe.rawMaterialId!,
           currentStock: { gte: deductAmount.toNumber() },
         },
         data: { currentStock: { decrement: deductAmount.toNumber() } },
@@ -104,13 +117,13 @@ export async function createProductionRecord(formData: FormData) {
       // count === 0 → stok bu arada başka bir işlemle düşmüş
       if (updateResult.count === 0) {
         throw new Error(
-          `Yetersiz stok: ${recipe.rawMaterial.name} — işlem sırasında stok değişti, lütfen tekrar deneyin.`
+          `Yetersiz stok: ${rawMaterial.name} — işlem sırasında stok değişti, lütfen tekrar deneyin.`
         );
       }
 
       await tx.stockMovement.create({
         data: {
-          rawMaterialId: recipe.rawMaterialId,
+          rawMaterialId: recipe.rawMaterialId!,
           type: "URETIM_CIKISI",
           amount: deductAmount.toNumber(),
           date,
@@ -120,11 +133,28 @@ export async function createProductionRecord(formData: FormData) {
       });
 
       movements.push({
-        rawMaterialName: recipe.rawMaterial.name,
-        unit: recipe.rawMaterial.unit,
+        rawMaterialName: rawMaterial.name,
+        unit: rawMaterial.unit,
         amount: deductAmount.toNumber(),
       });
     }
+
+    // 3. Ürün stoğunu artır + ProductStockMovement kaydet
+    await tx.product.update({
+      where: { id: productId },
+      data: { currentStock: { increment: quantity } },
+    });
+
+    await tx.productStockMovement.create({
+      data: {
+        productId,
+        type: "URETIM_GIRISI",
+        quantity,
+        date,
+        description: `Üretim: ${quantity} adet üretildi`,
+        productionRecordId: productionRecord.id,
+      },
+    });
 
     return { productionRecord, movements, productName: product.name, quantity };
   });

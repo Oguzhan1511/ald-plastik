@@ -13,13 +13,16 @@ async function getDashboardData() {
 
   const [
     rawMaterials,
-    productCount,
+    products,
     thisMonthProductions,
     recentProductions,
     recentMovements,
   ] = await Promise.all([
     prisma.rawMaterial.findMany({ orderBy: { name: "asc" } }),
-    prisma.product.count(),
+    prisma.product.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, code: true, currentStock: true, criticalLevel: true },
+    }),
     prisma.productionRecord.findMany({
       where: { date: { gte: startOfMonth } },
       select: { quantity: true },
@@ -41,13 +44,19 @@ async function getDashboardData() {
     return parseFloat(m.currentStock.toString()) <= parseFloat(m.criticalLevel.toString());
   });
 
+  const criticalProducts = products.filter((p) => {
+    if (!p.criticalLevel) return false;
+    return parseFloat(p.currentStock.toString()) <= parseFloat(p.criticalLevel.toString());
+  });
+
   const thisMonthCount = thisMonthProductions.length;
   const thisMonthTotal = thisMonthProductions.reduce((sum, p) => sum + p.quantity, 0);
 
   return {
     rawMaterials,
     criticalMaterials,
-    productCount,
+    criticalProducts,
+    productCount: products.length,
     thisMonthCount,
     thisMonthTotal,
     recentProductions,
@@ -59,6 +68,7 @@ export default async function DashboardPage() {
   const {
     rawMaterials,
     criticalMaterials,
+    criticalProducts,
     productCount,
     thisMonthCount,
     thisMonthTotal,
@@ -188,6 +198,51 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {/* Kritik Ürün Stok Uyarısı */}
+        {criticalProducts.length > 0 && (
+          <div className="card border-orange-200">
+            <div className="card-header bg-orange-50 rounded-t-xl border-orange-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <h2 className="font-semibold text-orange-700">Kritik Ürün Stoku</h2>
+                </div>
+                <Link href="/urun-stok" className="text-sm text-orange-600 hover:text-orange-800 font-medium">
+                  Stok Yönetimi →
+                </Link>
+              </div>
+            </div>
+            <div className="card-body">
+              <div className="grid gap-2">
+                {criticalProducts.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3 bg-orange-50 border border-orange-100 rounded-lg"
+                  >
+                    <div>
+                      <span className="font-medium text-orange-800 text-sm">{p.name}</span>
+                      {p.code && <span className="ml-2 text-xs font-mono text-slate-400">{p.code}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-orange-600 font-semibold">
+                        {parseFloat(p.currentStock.toString()).toLocaleString("tr-TR")} adet
+                      </span>
+                      {p.criticalLevel && (
+                        <span className="text-slate-400 text-xs">
+                          / min {parseFloat(p.criticalLevel.toString()).toLocaleString("tr-TR")} adet
+                        </span>
+                      )}
+                      <span className="badge-orange">Kritik</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Alt 2 sütun */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Son Üretimler */}
@@ -273,7 +328,7 @@ export default async function DashboardPage() {
             { href: "/hammaddeler", label: "Hammadde Ekle", icon: "📦", color: "hover:border-blue-300 hover:bg-blue-50" },
             { href: "/urunler", label: "Ürün & Reçete", icon: "📋", color: "hover:border-purple-300 hover:bg-purple-50" },
             { href: "/uretim", label: "Üretim Girişi", icon: "⚙️", color: "hover:border-green-300 hover:bg-green-50" },
-            { href: "/hareketler", label: "Hareketler", icon: "📊", color: "hover:border-orange-300 hover:bg-orange-50" },
+            { href: "/urun-stok", label: "Ürün Stok", icon: "📤", color: "hover:border-orange-300 hover:bg-orange-50" },
           ].map((item) => (
             <Link
               key={item.href}

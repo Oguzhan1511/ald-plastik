@@ -1,6 +1,5 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -16,17 +15,18 @@ export const authOptions: AuthOptions = {
         }
 
         const adminUsername = process.env.ADMIN_USERNAME;
-        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+        const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (!adminUsername || !adminPasswordHash) {
-          console.error("ADMIN_USERNAME or ADMIN_PASSWORD_HASH not set in .env");
+        if (!adminUsername || !adminPassword) {
+          console.error("ADMIN_USERNAME or ADMIN_PASSWORD not set in .env");
           return null;
         }
 
-        const isValidUsername = credentials.username === adminUsername;
-        const isValidPassword = await bcrypt.compare(credentials.password, adminPasswordHash);
+        const isValid =
+          credentials.username === adminUsername &&
+          credentials.password === adminPassword;
 
-        if (isValidUsername && isValidPassword) {
+        if (isValid) {
           return {
             id: "1",
             name: adminUsername,

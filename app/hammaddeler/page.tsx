@@ -10,5 +10,7 @@ export const metadata: Metadata = {
 export default async function HammaddelerPage() {
   const materials = await getRawMaterials();
 
-  return <HammaddeClient initialData={materials} />;
+  const serializedRawMaterials = JSON.parse(JSON.stringify(materials));
+
+  return <HammaddeClient initialData={serializedRawMaterials} />;
 }

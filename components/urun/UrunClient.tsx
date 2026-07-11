@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { Modal } from "@/components/ui/Modal";
 import {
   createProduct,
@@ -17,12 +17,14 @@ interface RecipeWithMaterial {
   productId: string;
   rawMaterialId: string;
   quantityPerUnit: Decimal;
+  wastePercentage: Decimal;
   rawMaterial: RawMaterial;
 }
 
 interface ProductWithRecipes {
   id: string;
   name: string;
+  code: string | null;
   unitWeight: Decimal | null;
   createdAt: Date;
   recipes: RecipeWithMaterial[];
@@ -42,7 +44,19 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
   const [error, setError] = useState("");
   const [recipeError, setRecipeError] = useState("");
   const [success, setSuccess] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Ürün listesi arama (ad veya kod)
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.code && p.code.toLowerCase().includes(q))
+    );
+  }, [products, searchQuery]);
 
   const closeModal = () => {
     setModal(null);
@@ -171,32 +185,55 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
 
         {/* Table */}
         <div className="card">
-          <div className="card-header flex items-center justify-between">
-            <h2 className="font-semibold text-slate-700">Ürün Listesi</h2>
-            <span className="text-sm text-slate-400">{products.length} ürün</span>
+          <div className="card-header flex items-center justify-between gap-4">
+            <h2 className="font-semibold text-slate-700 flex-shrink-0">Ürün Listesi</h2>
+            {/* Arama kutusu */}
+            <div className="relative flex-1 max-w-xs">
+              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                id="input-urun-ara"
+                className="form-input pl-9 text-sm py-1.5"
+                placeholder="Ad veya kod ile ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <span className="text-sm text-slate-400 flex-shrink-0">{filteredProducts.length} ürün</span>
           </div>
           <div className="table-wrapper rounded-t-none border-0">
-            {products.length === 0 ? (
+            {filteredProducts.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <p className="text-slate-500 font-medium">Henüz ürün eklenmemiş</p>
+                {products.length === 0 ? (
+                  <>
+                    <div className="empty-state-icon">
+                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <p className="text-slate-500 font-medium">Henüz ürün eklenmemiş</p>
+                  </>
+                ) : (
+                  <p className="text-slate-400 text-sm">
+                    &quot;{searchQuery}&quot; ile eşleşen ürün bulunamadı.
+                  </p>
+                )}
               </div>
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>Ürün Adı</th>
+                    <th>Kod</th>
                     <th>Reçete (Hammadde Sayısı)</th>
                     <th>Toplam Gramaj</th>
                     <th>İşlemler</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p) => {
+                  {filteredProducts.map((p) => {
                     const total = p.recipes.reduce(
                       (sum, r) => sum + parseFloat(r.quantityPerUnit.toString()),
                       0
@@ -204,6 +241,13 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                     return (
                       <tr key={p.id}>
                         <td className="font-medium text-slate-800">{p.name}</td>
+                        <td>
+                          {p.code ? (
+                            <span className="badge-blue font-mono text-xs">{p.code}</span>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
                         <td>
                           {p.recipes.length === 0 ? (
                             <span className="badge-yellow">Reçete yok</span>
@@ -266,6 +310,16 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
             <label className="form-label">Ürün Adı *</label>
             <input name="name" required className="form-input" placeholder="örn: PVC Boru 10mm" />
           </div>
+          <div>
+            <label className="form-label">Ürün Kodu <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+            <input
+              name="code"
+              className="form-input font-mono"
+              placeholder="örn: 602051Z"
+              autoComplete="off"
+            />
+            <p className="text-xs text-slate-400 mt-1">Benzersiz bir kod — üretim formunda arama için kullanılır.</p>
+          </div>
         </form>
       </Modal>
 
@@ -288,6 +342,17 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
           <div>
             <label className="form-label">Ürün Adı *</label>
             <input name="name" required defaultValue={selected?.name} className="form-input" />
+          </div>
+          <div>
+            <label className="form-label">Ürün Kodu <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+            <input
+              name="code"
+              defaultValue={selected?.code ?? ""}
+              className="form-input font-mono"
+              placeholder="örn: 602051Z"
+              autoComplete="off"
+            />
+            <p className="text-xs text-slate-400 mt-1">Benzersiz — boş bırakılırsa silinir.</p>
           </div>
         </form>
       </Modal>
@@ -316,7 +381,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
       <Modal
         isOpen={modal === "recete"}
         onClose={closeModal}
-        title={`Reçete — ${selected?.name}`}
+        title={`Reçete — ${selected?.name}${selected?.code ? ` (${selected.code})` : ""}`}
         size="lg"
         footer={
           <button className="btn btn-secondary" onClick={closeModal}>Kapat</button>
@@ -345,27 +410,40 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                   <tr>
                     <th>Hammadde</th>
                     <th>Miktar/Adet</th>
+                    <th>Fire Oranı</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedRecipes.map((r) => (
-                    <tr key={r.id}>
-                      <td className="font-medium text-slate-800">{r.rawMaterial.name}</td>
-                      <td>
-                        {parseFloat(r.quantityPerUnit.toString()).toLocaleString("tr-TR", { maximumFractionDigits: 3 })} {r.rawMaterial.unit}
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDeleteRecipe(r.id)}
-                          disabled={isPending}
-                        >
-                          Sil
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {selectedRecipes.map((r) => {
+                    const wastePercent = parseFloat(r.wastePercentage.toString()) * 100;
+                    return (
+                      <tr key={r.id}>
+                        <td className="font-medium text-slate-800">{r.rawMaterial.name}</td>
+                        <td>
+                          {parseFloat(r.quantityPerUnit.toString()).toLocaleString("tr-TR", { maximumFractionDigits: 3 })} {r.rawMaterial.unit}
+                        </td>
+                        <td>
+                          {wastePercent > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
+                              %{wastePercent.toLocaleString("tr-TR", { maximumFractionDigits: 1 })} fire
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 text-xs">—</span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteRecipe(r.id)}
+                            disabled={isPending}
+                          >
+                            Sil
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -383,37 +461,57 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                 Tüm hammaddeler zaten bu reçetede mevcut.
               </div>
             ) : (
-              <form action={handleAddRecipe} className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <label className="form-label text-xs">Hammadde</label>
-                  <select name="rawMaterialId" required className="form-select">
-                    <option value="">Seçin...</option>
-                    {availableMaterials.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} ({m.unit})
-                      </option>
-                    ))}
-                  </select>
+              <form action={handleAddRecipe} className="space-y-3">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <label className="form-label text-xs">Hammadde</label>
+                    <select name="rawMaterialId" required className="form-select">
+                      <option value="">Seçin...</option>
+                      {availableMaterials.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.unit})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-32">
+                    <label className="form-label text-xs">Miktar/Adet</label>
+                    <input
+                      name="quantityPerUnit"
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      required
+                      className="form-input"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="w-28">
+                    <label className="form-label text-xs">Fire Oranı</label>
+                    <div className="relative">
+                      <input
+                        name="wastePercentage"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="form-input pr-7"
+                        placeholder="0"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium pointer-events-none">%</span>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary flex-shrink-0"
+                    disabled={isPending}
+                  >
+                    Ekle
+                  </button>
                 </div>
-                <div className="w-36">
-                  <label className="form-label text-xs">Miktar/Adet</label>
-                  <input
-                    name="quantityPerUnit"
-                    type="number"
-                    min="0.001"
-                    step="0.001"
-                    required
-                    className="form-input"
-                    placeholder="0"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isPending}
-                >
-                  Ekle
-                </button>
+                <p className="text-xs text-slate-400">
+                  Fire oranı opsiyonel — örn. 3 yazarsanız %3 fire ile düşüm yapılır.
+                </p>
               </form>
             )}
           </div>

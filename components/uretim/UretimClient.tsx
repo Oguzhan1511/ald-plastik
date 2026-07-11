@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { createProductionRecord } from "@/lib/actions/uretim";
 import { RawMaterial } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -9,12 +9,14 @@ interface RecipeItem {
   id: string;
   rawMaterialId: string;
   quantityPerUnit: Decimal;
+  wastePercentage: Decimal;
   rawMaterial: RawMaterial;
 }
 
 interface ProductItem {
   id: string;
   name: string;
+  code: string | null;
   recipes: RecipeItem[];
 }
 
@@ -23,7 +25,7 @@ interface ProductionRecord {
   quantity: number;
   date: Date;
   description: string | null;
-  product: { name: string };
+  product: { name: string; code: string | null };
 }
 
 interface UretimClientProps {
@@ -39,6 +41,8 @@ interface ProductionResult {
 
 export function UretimClient({ products, recentProductions }: UretimClientProps) {
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -48,15 +52,38 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
 
-  // Önizleme: seçilen ürün + miktar için düşülecek hammaddeler
+  // Ürün arama filtresi — hem ada hem koda göre
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.code && p.code.toLowerCase().includes(q))
+    );
+  }, [products, productSearch]);
+
+  const handleSelectProduct = (p: ProductItem) => {
+    setSelectedProductId(p.id);
+    setProductSearch(p.code ? `${p.name} (${p.code})` : p.name);
+    setShowDropdown(false);
+  };
+
+  // Önizleme: seçilen ürün + miktar için düşülecek hammaddeler (fire dahil)
   const qty = parseInt(quantity) || 0;
-  const preview = selectedProduct?.recipes.map((r) => ({
-    name: r.rawMaterial.name,
-    unit: r.rawMaterial.unit,
-    perUnit: parseFloat(r.quantityPerUnit.toString()),
-    total: parseFloat(r.quantityPerUnit.toString()) * qty,
-    currentStock: parseFloat(r.rawMaterial.currentStock.toString()),
-  }));
+  const preview = selectedProduct?.recipes.map((r) => {
+    const wasteFactor = 1 + parseFloat(r.wastePercentage.toString());
+    const perUnit = parseFloat(r.quantityPerUnit.toString());
+    const wastePercent = parseFloat(r.wastePercentage.toString()) * 100;
+    return {
+      name: r.rawMaterial.name,
+      unit: r.rawMaterial.unit,
+      perUnit,
+      wastePercent,
+      total: perUnit * qty * wasteFactor,
+      currentStock: parseFloat(r.rawMaterial.currentStock.toString()),
+    };
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +102,7 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
         if (res.success && res.data) {
           setResult(res.data);
           setSelectedProductId("");
+          setProductSearch("");
           setQuantity("");
           setDescription("");
           setDate(new Date().toISOString().split("T")[0]);
@@ -102,23 +130,61 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
               </div>
               <div className="card-body">
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Ürün arama kutusu */}
                   <div>
                     <label className="form-label">Ürün *</label>
-                    <select
-                      value={selectedProductId}
-                      onChange={(e) => setSelectedProductId(e.target.value)}
-                      required
-                      className="form-select"
-                      id="select-urun"
-                    >
-                      <option value="">Ürün seçin...</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                          {p.recipes.length === 0 ? " (⚠ Reçete yok)" : ""}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="input-urun-ara"
+                        className="form-input"
+                        placeholder="Ürün adı veya kod ile ara (örn: Dubel veya 602051Z)"
+                        value={productSearch}
+                        onChange={(e) => {
+                          setProductSearch(e.target.value);
+                          setSelectedProductId("");
+                          setShowDropdown(true);
+                        }}
+                        onFocus={() => setShowDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                        autoComplete="off"
+                      />
+                      {showDropdown && productSearch.trim() !== "" && (
+                        <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {filteredProducts.length === 0 ? (
+                            <div className="px-4 py-3 text-sm text-slate-400">Eşleşen ürün bulunamadı.</div>
+                          ) : (
+                            filteredProducts.map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-sm flex items-center justify-between gap-2 border-b border-slate-100 last:border-0"
+                                onMouseDown={() => handleSelectProduct(p)}
+                              >
+                                <span className="font-medium text-slate-800">{p.name}</span>
+                                <span className="flex items-center gap-2 flex-shrink-0">
+                                  {p.code && (
+                                    <span className="badge-blue text-xs font-mono">{p.code}</span>
+                                  )}
+                                  {p.recipes.length === 0 && (
+                                    <span className="badge-yellow text-xs">⚠ Reçete yok</span>
+                                  )}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {selectedProductId && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✓ Seçildi: <strong>{selectedProduct?.name}</strong>
+                        {selectedProduct?.code && <span className="ml-1 font-mono text-slate-500">({selectedProduct.code})</span>}
+                      </p>
+                    )}
+                    {!selectedProductId && productSearch.trim() !== "" && (
+                      <p className="text-xs text-amber-600 mt-1">Listeden bir ürün seçin.</p>
+                    )}
                   </div>
 
                   <div>
@@ -204,6 +270,9 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                   </h2>
                   <p className="text-sm text-slate-400 mt-0.5">
                     {qty} adet × {selectedProduct.name}
+                    {selectedProduct.code && (
+                      <span className="ml-1.5 font-mono text-slate-400 text-xs">({selectedProduct.code})</span>
+                    )}
                   </p>
                 </div>
                 <div className="card-body">
@@ -236,7 +305,7 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                             </div>
                             <div className="mt-1.5 text-xs space-y-0.5">
                               <div className="text-slate-500">
-                                Gerekli:{" "}
+                                Gerekli (fire dahil):{" "}
                                 <strong className={isInsufficient ? "text-red-700" : "text-slate-700"}>
                                   {item.total.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {item.unit}
                                 </strong>
@@ -245,7 +314,11 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                                 Mevcut: <strong className="text-slate-700">{item.currentStock.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {item.unit}</strong>
                               </div>
                               <div className="text-slate-400">
-                                ({item.perUnit} {item.unit}/adet × {qty} adet)
+                                ({item.perUnit} {item.unit}/adet × {qty} adet
+                                {item.wastePercent > 0 && (
+                                  <span className="text-orange-500"> + %{item.wastePercent.toLocaleString("tr-TR", { maximumFractionDigits: 1 })} fire</span>
+                                )}
+                                )
                               </div>
                             </div>
                           </div>
@@ -284,6 +357,7 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                   <tr>
                     <th>Tarih</th>
                     <th>Ürün</th>
+                    <th>Kod</th>
                     <th>Üretilen Adet</th>
                     <th>Açıklama</th>
                   </tr>
@@ -299,6 +373,13 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                         })}
                       </td>
                       <td className="font-medium text-slate-800">{rec.product.name}</td>
+                      <td>
+                        {rec.product.code ? (
+                          <span className="badge-blue font-mono text-xs">{rec.product.code}</span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
                       <td>
                         <span className="font-semibold text-blue-700">
                           {rec.quantity.toLocaleString("tr-TR")} adet

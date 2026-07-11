@@ -14,7 +14,10 @@ export async function getProducts() {
     orderBy: { name: "asc" },
     include: {
       recipes: {
-        include: { rawMaterial: true },
+        include: {
+          rawMaterial: true,
+          componentProduct: true,
+        },
       },
     },
   });
@@ -27,14 +30,20 @@ export async function createProduct(formData: FormData) {
   await requireAuth();
 
   const name = formData.get("name") as string;
+  const codeRaw = (formData.get("code") as string)?.trim() || null;
 
   if (!name?.trim()) throw new Error("Ürün adı zorunludur.");
 
   const existing = await prisma.product.findUnique({ where: { name: name.trim() } });
   if (existing) throw new Error(`"${name}" adında bir ürün zaten mevcut.`);
 
+  if (codeRaw) {
+    const existingCode = await prisma.product.findUnique({ where: { code: codeRaw } });
+    if (existingCode) throw new Error(`"${codeRaw}" kodu zaten başka bir ürüne ait.`);
+  }
+
   await prisma.product.create({
-    data: { name: name.trim() },
+    data: { name: name.trim(), code: codeRaw },
   });
 
   revalidatePath("/urunler");
@@ -48,6 +57,7 @@ export async function updateProduct(id: string, formData: FormData) {
   await requireAuth();
 
   const name = formData.get("name") as string;
+  const codeRaw = (formData.get("code") as string)?.trim() || null;
 
   if (!name?.trim()) throw new Error("Ürün adı zorunludur.");
 
@@ -56,9 +66,16 @@ export async function updateProduct(id: string, formData: FormData) {
   });
   if (existing) throw new Error(`"${name}" adında başka bir ürün zaten mevcut.`);
 
+  if (codeRaw) {
+    const existingCode = await prisma.product.findFirst({
+      where: { code: codeRaw, NOT: { id } },
+    });
+    if (existingCode) throw new Error(`"${codeRaw}" kodu zaten başka bir ürüne ait.`);
+  }
+
   await prisma.product.update({
     where: { id },
-    data: { name: name.trim() },
+    data: { name: name.trim(), code: codeRaw },
   });
 
   revalidatePath("/urunler");
@@ -95,23 +112,53 @@ export async function addRecipeLine(formData: FormData) {
   await requireAuth();
 
   const productId = formData.get("productId") as string;
-  const rawMaterialId = formData.get("rawMaterialId") as string;
+  const rawMaterialId = (formData.get("rawMaterialId") as string) || null;
+  const componentProductId = (formData.get("componentProductId") as string) || null;
 
-  if (!productId) throw new Error("Ürün seçimi zorunludur.");
-  if (!rawMaterialId) throw new Error("Hammadde seçimi zorunludur.");
+  if (!productId) throw new Error("\u00dcr\u00fcn se\u00e7imi zorunludur.");
+  if (!rawMaterialId && !componentProductId)
+    throw new Error("Hammadde veya alt \u00fcr\u00fcn se\u00e7imi zorunludur.");
+  if (rawMaterialId && componentProductId)
+    throw new Error("Ayn\u0131 anda hem hammadde hem alt \u00fcr\u00fcn se\u00e7ilemez.");
 
-  const quantityPerUnit = parseDecimalInput(formData.get("quantityPerUnit") as string, "Miktar");
-  if (quantityPerUnit <= 0) throw new Error("Miktar pozitif bir sayı olmalıdır.");
+  const quantityRaw = (formData.get("quantityPerUnit") as string)?.trim();
+  const quantityPerUnit = quantityRaw ? parseDecimalInput(quantityRaw, "Miktar") : 0;
+  if (quantityPerUnit < 0) throw new Error("Miktar negatif olamaz.");
 
-  const existing = await prisma.recipe.findUnique({
-    where: { productId_rawMaterialId: { productId, rawMaterialId } },
-  });
-  if (existing) {
-    throw new Error("Bu hammadde zaten bu ürünün reçetesinde mevcut. Silip yeniden ekleyebilirsiniz.");
+  // Fire oran\u0131: kullan\u0131c\u0131 y\u00fczde olarak girer (\u00f6rn. "3" \u2192 0.03)
+  const wastePercentageRaw = (formData.get("wastePercentage") as string)?.trim();
+  let wastePercentage = 0;
+  if (wastePercentageRaw) {
+    const parsed = parseFloat(wastePercentageRaw);
+    if (isNaN(parsed) || parsed < 0) throw new Error("Fire oran\u0131 0 veya pozitif bir say\u0131 olmal\u0131d\u0131r.");
+    wastePercentage = parsed / 100;
+  }
+
+  // Tekrar kontrol\u00fc (@@unique kald\u0131r\u0131ld\u0131\u011f\u0131 i\u00e7in findFirst ile yap\u0131l\u0131r)
+  if (rawMaterialId) {
+    const existing = await prisma.recipe.findFirst({
+      where: { productId, rawMaterialId },
+    });
+    if (existing) throw new Error("Bu hammadde zaten bu \u00fcr\u00fcn\u00fcn re\u00e7etesinde mevcut.");
+  }
+  if (componentProductId) {
+    const existing = await prisma.recipe.findFirst({
+      where: { productId, componentProductId },
+    });
+    if (existing) throw new Error("Bu alt \u00fcr\u00fcn zaten bu \u00fcr\u00fcn\u00fcn re\u00e7etesinde mevcut.");
+    // D\u00f6ng\u00fc kontrol\u00fc: componentProduct, \u00fcst \u00fcr\u00fcn\u00fcn kendisi olamaz
+    if (componentProductId === productId)
+      throw new Error("Bir \u00fcr\u00fcn kendi alt \u00fcr\u00fcn\u00fc olamaz.");
   }
 
   await prisma.recipe.create({
-    data: { productId, rawMaterialId, quantityPerUnit },
+    data: {
+      productId,
+      rawMaterialId: rawMaterialId || null,
+      componentProductId: componentProductId || null,
+      quantityPerUnit,
+      wastePercentage,
+    },
   });
 
   revalidatePath("/urunler");

@@ -37,33 +37,45 @@ model RawMaterial {
 model Product {
   id               String   @id @default(cuid())
   name             String   @unique
+  code             String?  @unique // İşletmenin ürün kodu (örn. "602051Z")
   unitWeight       Decimal? // Bir adedinin toplam gramajı (bilgi amaçlı)
+  currentStock     Decimal  @default(0) // Mevcut ürün stoku (adet)
+  criticalLevel    Decimal? // Bu seviyenin altına düşünce uyarı
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  // İlişkiler
-  recipes          Recipe[]
-  productionRecords ProductionRecord[]
+  // Bu ürünün kendi reçete satırları (bu ürünü yapmak için gerekenler)
+  recipes           Recipe[]  @relation("RecipeParentProduct")
+  // Bu ürünün başka ürünlerin reçetesinde bileşen olarak geçtiği satırlar
+  componentInRecipes Recipe[] @relation("RecipeComponentProduct")
+  productionRecords  ProductionRecord[]
+  productStockMovements ProductStockMovement[]
 
   @@map("products")
 }
 
 // ─────────────────────────────────────────────
 // Reçete / BOM Satırı (Recipe)
-// Bir ürün için birden fazla hammadde-miktar ikilisi
+// Çok seviyeli BOM: bir ürün için hammadde VEYA alt ürün bileşeni
 // ─────────────────────────────────────────────
 model Recipe {
-  id               String      @id @default(cuid())
-  productId        String
-  rawMaterialId    String
-  quantityPerUnit  Decimal     // Bir adet ürün için gereken hammadde miktarı
-  createdAt        DateTime    @default(now())
+  id                 String      @id @default(cuid())
+  productId          String      // Üst ürün (bu reçete kimin için?)
 
-  product          Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  rawMaterial      RawMaterial @relation(fields: [rawMaterialId], references: [id], onDelete: Restrict)
+  // Bileşen — sadece biri dolu olur:
+  rawMaterialId      String?     // Hammadde bileşeni
+  componentProductId String?     // Alt Ürün bileşeni (çok seviyeli BOM)
 
-  // Her üründe aynı hammadde sadece bir kez olabilir
-  @@unique([productId, rawMaterialId])
+  quantityPerUnit    Decimal     @default(0) // Bir adet üst ürün için gereken miktar
+  wastePercentage    Decimal     @default(0) // Fire oranı (örn. 0.03 = %3)
+  createdAt          DateTime    @default(now())
+
+  product            Product      @relation("RecipeParentProduct", fields: [productId], references: [id], onDelete: Cascade)
+  rawMaterial        RawMaterial? @relation(fields: [rawMaterialId], references: [id], onDelete: Restrict)
+  componentProduct   Product?     @relation("RecipeComponentProduct", fields: [componentProductId], references: [id], onDelete: Restrict)
+
+  // NOT: SQLite'da nullable sütunlar içeren composite unique güvenilmez davranır.
+  // Tekrar kontrolü application layer'da (findFirst + skip) yapılmaktadır.
   @@map("recipes")
 }
 
@@ -99,6 +111,26 @@ model ProductionRecord {
 
   product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   stockMovements StockMovement[]
+  productStockMovements ProductStockMovement[]
 
   @@map("production_records")
+}
+
+// ─────────────────────────────────────────────
+// Ürün Stok Hareketi (Product Stock Movement)
+// type: URETIM_GIRISI | SATIS_CIKISI | MANUEL_GIRIS | MANUEL_CIKIS | DUZELTME
+// ─────────────────────────────────────────────
+model ProductStockMovement {
+  id                 String   @id @default(cuid())
+  productId          String
+  type               String   // URETIM_GIRISI | SATIS_CIKISI | MANUEL_GIRIS | MANUEL_CIKIS | DUZELTME
+  quantity           Decimal  // Pozitif = giriş, negatif = çıkış
+  date               DateTime @default(now())
+  description        String?
+  productionRecordId String?  // Üretimden geldiyse bağlantı
+
+  product            Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productionRecord   ProductionRecord? @relation(fields: [productionRecordId], references: [id], onDelete: SetNull)
+
+  @@map("product_stock_movements")
 }

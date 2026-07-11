@@ -14,5 +14,8 @@ export default async function UrunlerPage() {
     getRawMaterials(),
   ]);
 
-  return <UrunClient initialProducts={products as any} rawMaterials={rawMaterials} />;
+  const serializedProducts = JSON.parse(JSON.stringify(products));
+  const serializedRawMaterials = JSON.parse(JSON.stringify(rawMaterials));
+
+  return <UrunClient initialProducts={serializedProducts} rawMaterials={serializedRawMaterials} />;
 }
