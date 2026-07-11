@@ -258,6 +258,7 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
               </table>
             )}
           </div>
+        </div>
       </div>
 
       {/* ─── ÇIKIŞ MODAL ─── */}
