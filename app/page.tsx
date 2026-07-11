@@ -301,7 +301,9 @@ export default async function DashboardPage() {
                       <div>
                         <div className="text-sm font-medium text-slate-800">{p.product.name}</div>
                         <div className="text-xs text-slate-400 mt-0.5">
-                          {new Date(p.date).toLocaleDateString("tr-TR")}
+                          {new Date(p.date).toLocaleString("tr-TR", {
+                            day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                          })}
                         </div>
                       </div>
                       <span className="badge-blue font-semibold">

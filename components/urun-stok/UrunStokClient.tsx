@@ -32,6 +32,12 @@ const typeConfig: Record<string, { label: string; badgeClass: string; sign: stri
   DUZELTME:      { label: "Düzeltme",      badgeClass: "badge-slate", sign: "±", color: "text-slate-600" },
 };
 
+function getLocalISOTime() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function UrunStokClient({ products }: UrunStokClientProps) {
   const [modal, setModal] = useState<ModalType>(null);
   const [selected, setSelected] = useState<ProductStock | null>(null);
@@ -41,7 +47,7 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
   const [sortBy, setSortBy] = useState<"name_asc" | "name_desc" | "stock_asc" | "stock_desc">("name_asc");
   const [isPending, startTransition] = useTransition();
 
-  const today = new Date().toISOString().split("T")[0];
+  const todayLocal = getLocalISOTime();
 
   const showSuccess = (msg: string) => {
     setSuccess(msg);
@@ -341,8 +347,8 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
             />
           </div>
           <div>
-            <label className="form-label">Tarih *</label>
-            <input name="date" type="date" required defaultValue={today} className="form-input" />
+            <label className="form-label">Tarih & Saat *</label>
+            <input name="date" type="datetime-local" required defaultValue={todayLocal} className="form-input" />
           </div>
           <div>
             <label className="form-label">Açıklama (opsiyonel)</label>
@@ -381,8 +387,8 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
           </div>
           <input type="hidden" name="type" value="MANUEL_GIRIS" />
           <div>
-            <label className="form-label">Tarih *</label>
-            <input name="date" type="date" required defaultValue={today} className="form-input" />
+            <label className="form-label">Tarih & Saat *</label>
+            <input name="date" type="datetime-local" required defaultValue={todayLocal} className="form-input" />
           </div>
           <div>
             <label className="form-label">Açıklama (opsiyonel)</label>
@@ -429,8 +435,8 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
             <p className="text-xs text-slate-400 mt-1">Sayım sonucu gerçek miktarı girin.</p>
           </div>
           <div>
-            <label className="form-label">Tarih *</label>
-            <input name="date" type="date" required defaultValue={today} className="form-input" />
+            <label className="form-label">Tarih & Saat *</label>
+            <input name="date" type="datetime-local" required defaultValue={todayLocal} className="form-input" />
           </div>
           <div>
             <label className="form-label">Açıklama (opsiyonel)</label>

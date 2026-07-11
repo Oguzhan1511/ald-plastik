@@ -39,13 +39,19 @@ interface ProductionResult {
   movements: { rawMaterialName: string; unit: string; amount: number }[];
 }
 
+function getLocalISOTime() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function UretimClient({ products, recentProductions }: UretimClientProps) {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(getLocalISOTime());
   const [error, setError] = useState("");
   const [result, setResult] = useState<ProductionResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -105,7 +111,7 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
           setProductSearch("");
           setQuantity("");
           setDescription("");
-          setDate(new Date().toISOString().split("T")[0]);
+          setDate(getLocalISOTime());
           window.location.reload();
         }
       } catch (e: unknown) {
@@ -203,9 +209,9 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                   </div>
 
                   <div>
-                    <label className="form-label">Tarih *</label>
+                    <label className="form-label">Tarih & Saat *</label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       required
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
@@ -366,10 +372,12 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                   {recentProductions.map((rec) => (
                     <tr key={rec.id}>
                       <td className="text-slate-500 text-sm">
-                        {new Date(rec.date).toLocaleDateString("tr-TR", {
+                        {new Date(rec.date).toLocaleString("tr-TR", {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </td>
                       <td className="font-medium text-slate-800">{rec.product.name}</td>

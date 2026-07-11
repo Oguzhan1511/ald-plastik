@@ -29,6 +29,12 @@ function isCritical(stock: Decimal | number, critical: Decimal | number | null):
   return s <= c;
 }
 
+function getLocalISOTime() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function HammaddeClient({ initialData }: HammaddeClientProps) {
   const [data, setData] = useState<RawMaterial[]>(initialData);
   const [modal, setModal] = useState<ModalType>(null);
@@ -129,7 +135,7 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
     });
   };
 
-  const today = new Date().toISOString().split("T")[0];
+  const todayLocal = getLocalISOTime();
 
   return (
     <>
@@ -476,11 +482,11 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
             />
           </div>
           <div>
-            <label className="form-label">Tarih *</label>
+            <label className="form-label">Tarih & Saat *</label>
             <input
               name="date"
-              type="date"
-              defaultValue={today}
+              type="datetime-local"
+              defaultValue={todayLocal}
               required
               className="form-input"
             />

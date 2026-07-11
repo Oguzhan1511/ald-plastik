@@ -271,7 +271,7 @@ export function HareketiClient({
                         return (
                           <tr key={m.id}>
                             <td className="text-slate-500 text-sm whitespace-nowrap">
-                              {new Date(m.date).toLocaleDateString("tr-TR", {
+                              {new Date(m.date).toLocaleString("tr-TR", {
                                 day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
                               })}
                             </td>
@@ -415,7 +415,7 @@ export function HareketiClient({
                         return (
                           <tr key={m.id}>
                             <td className="text-slate-500 text-sm whitespace-nowrap">
-                              {new Date(m.date).toLocaleDateString("tr-TR", {
+                              {new Date(m.date).toLocaleString("tr-TR", {
                                 day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
                               })}
                             </td>
@@ -487,7 +487,9 @@ export function HareketiClient({
                       return (
                         <tr key={mv.id}>
                           <td className="text-slate-500 whitespace-nowrap">
-                            {new Date(mv.date).toLocaleDateString("tr-TR")}
+                            {new Date(mv.date).toLocaleString("tr-TR", {
+                              day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                            })}
                           </td>
                           <td><span className={typeInfo?.className}>{typeInfo?.label}</span></td>
                           <td className="font-semibold">
