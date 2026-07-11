@@ -14,10 +14,13 @@ export default async function UretimPage() {
     getProductionRecords(20),
   ]);
 
+  const serializedProducts = JSON.parse(JSON.stringify(products));
+  const serializedProductions = JSON.parse(JSON.stringify(recentProductions));
+
   return (
     <UretimClient
-      products={products as any}
-      recentProductions={recentProductions as any}
+      products={serializedProducts}
+      recentProductions={serializedProductions}
     />
   );
 }
