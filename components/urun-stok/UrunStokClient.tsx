@@ -38,6 +38,7 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name_asc" | "name_desc" | "stock_asc" | "stock_desc">("name_asc");
   const [isPending, startTransition] = useTransition();
 
   const today = new Date().toISOString().split("T")[0];
@@ -107,16 +108,39 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
     });
   };
 
-  // Arama filtresi
+  // Arama ve Sıralama
   const filteredProducts = useMemo(() => {
+    let result = products;
+
+    // Arama
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.code && p.code.toLowerCase().includes(q))
-    );
-  }, [products, searchQuery]);
+    if (q) {
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.code && p.code.toLowerCase().includes(q))
+      );
+    }
+
+    // Sıralama
+    return [...result].sort((a, b) => {
+      const stockA = parseFloat(a.currentStock.toString());
+      const stockB = parseFloat(b.currentStock.toString());
+      
+      switch (sortBy) {
+        case "name_asc":
+          return a.name.localeCompare(b.name, "tr-TR");
+        case "name_desc":
+          return b.name.localeCompare(a.name, "tr-TR");
+        case "stock_asc":
+          return stockA - stockB;
+        case "stock_desc":
+          return stockB - stockA;
+        default:
+          return 0;
+      }
+    });
+  }, [products, searchQuery, sortBy]);
 
   const criticalCount = products.filter((p) => {
     if (!p.criticalLevel) return false;
@@ -159,21 +183,40 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
 
         {/* Ürün Stok Tablosu */}
         <div className="card">
-          <div className="card-header flex items-center justify-between gap-4">
+          <div className="card-header flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <h2 className="font-semibold text-slate-700 flex-shrink-0">Ürün Stok Durumu</h2>
-            <div className="relative flex-1 max-w-xs">
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                className="form-input pl-9 text-sm py-1.5"
-                placeholder="Ad veya kod ile ara..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            
+            <div className="flex flex-1 w-full md:max-w-xl gap-3 items-center justify-end">
+              {/* Arama Kutusu */}
+              <div className="relative flex-1 max-w-xs">
+                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  className="form-input pl-9 text-sm py-1.5"
+                  placeholder="Ad veya kod ile ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Sıralama Kutusu */}
+              <div className="flex-shrink-0">
+                <select
+                  className="form-select text-sm py-1.5"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                >
+                  <option value="name_asc">A'dan Z'ye</option>
+                  <option value="name_desc">Z'den A'ya</option>
+                  <option value="stock_desc">Stok: Önce En Çok</option>
+                  <option value="stock_asc">Stok: Önce En Az</option>
+                </select>
+              </div>
+              
+              <span className="text-sm text-slate-400 hidden lg:inline-block flex-shrink-0">{filteredProducts.length} ürün</span>
             </div>
-            <span className="text-sm text-slate-400 flex-shrink-0">{filteredProducts.length} ürün</span>
           </div>
           <div className="table-wrapper rounded-t-none border-0">
             {filteredProducts.length === 0 ? (
