@@ -18,18 +18,8 @@ interface ProductStock {
   updatedAt: Date;
 }
 
-interface StockMovement {
-  id: string;
-  type: string;
-  quantity: Decimal;
-  date: Date;
-  description: string | null;
-  product: { id: string; name: string; code: string | null };
-}
-
 interface UrunStokClientProps {
   products: ProductStock[];
-  recentMovements: StockMovement[];
 }
 
 type ModalType = "exit" | "entry" | "adjust" | null;
@@ -42,7 +32,7 @@ const typeConfig: Record<string, { label: string; badgeClass: string; sign: stri
   DUZELTME:      { label: "Düzeltme",      badgeClass: "badge-slate", sign: "±", color: "text-slate-600" },
 };
 
-export function UrunStokClient({ products, recentMovements }: UrunStokClientProps) {
+export function UrunStokClient({ products }: UrunStokClientProps) {
   const [modal, setModal] = useState<ModalType>(null);
   const [selected, setSelected] = useState<ProductStock | null>(null);
   const [error, setError] = useState("");
@@ -268,63 +258,6 @@ export function UrunStokClient({ products, recentMovements }: UrunStokClientProp
               </table>
             )}
           </div>
-        </div>
-
-        {/* Son Hareketler */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="font-semibold text-slate-700">Son Ürün Stok Hareketleri</h2>
-          </div>
-          <div className="table-wrapper rounded-t-none border-0">
-            {recentMovements.length === 0 ? (
-              <div className="empty-state">
-                <p className="text-slate-400 text-sm">Henüz hareket kaydı bulunmuyor.</p>
-              </div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Tarih</th>
-                    <th>Ürün</th>
-                    <th>Tip</th>
-                    <th>Miktar</th>
-                    <th>Açıklama</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentMovements.map((m) => {
-                    const cfg = typeConfig[m.type] ?? { label: m.type, badgeClass: "badge-slate", sign: "", color: "text-slate-600" };
-                    const qty = parseFloat(m.quantity.toString());
-                    return (
-                      <tr key={m.id}>
-                        <td className="text-slate-500 text-sm">
-                          {new Date(m.date).toLocaleDateString("tr-TR", {
-                            day: "2-digit", month: "2-digit", year: "numeric",
-                          })}
-                        </td>
-                        <td>
-                          <div className="font-medium text-slate-800">{m.product.name}</div>
-                          {m.product.code && (
-                            <div className="text-xs text-slate-400 font-mono">{m.product.code}</div>
-                          )}
-                        </td>
-                        <td>
-                          <span className={cfg.badgeClass}>{cfg.label}</span>
-                        </td>
-                        <td>
-                          <span className={`font-semibold ${cfg.color}`}>
-                            {qty > 0 ? "+" : ""}{qty.toLocaleString("tr-TR")} adet
-                          </span>
-                        </td>
-                        <td className="text-slate-500 text-sm">{m.description || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* ─── ÇIKIŞ MODAL ─── */}

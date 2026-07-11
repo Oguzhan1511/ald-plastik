@@ -16,7 +16,8 @@ async function getDashboardData() {
     products,
     thisMonthProductions,
     recentProductions,
-    recentMovements,
+    recentMovementsRaw,
+    recentProductMovementsRaw,
   ] = await Promise.all([
     prisma.rawMaterial.findMany({ orderBy: { name: "asc" } }),
     prisma.product.findMany({
@@ -37,7 +38,33 @@ async function getDashboardData() {
       orderBy: { date: "desc" },
       include: { rawMaterial: { select: { name: true, unit: true } } },
     }),
+    prisma.productStockMovement.findMany({
+      take: 8,
+      orderBy: { date: "desc" },
+      include: { product: { select: { name: true } } },
+    }),
   ]);
+
+  const unifiedMovements = [
+    ...recentMovementsRaw.map(m => ({
+      id: m.id,
+      type: m.type,
+      date: m.date,
+      itemName: m.rawMaterial.name,
+      unit: m.rawMaterial.unit,
+      amount: m.amount,
+      isProduct: false,
+    })),
+    ...recentProductMovementsRaw.map(m => ({
+      id: m.id,
+      type: m.type,
+      date: m.date,
+      itemName: m.product.name,
+      unit: "adet",
+      amount: m.quantity,
+      isProduct: true,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8);
 
   const criticalMaterials = rawMaterials.filter((m) => {
     if (!m.criticalLevel) return false;
@@ -60,7 +87,7 @@ async function getDashboardData() {
     thisMonthCount,
     thisMonthTotal,
     recentProductions,
-    recentMovements,
+    recentMovements: unifiedMovements,
   };
 }
 
@@ -77,8 +104,14 @@ export default async function DashboardPage() {
   } = await getDashboardData();
 
   const movementTypeConfig: Record<string, { label: string; className: string; sign: string }> = {
-    GIRIS: { label: "Giriş", className: "badge-green", sign: "+" },
+    // Hammadde
+    GIRIS: { label: "H. Giriş", className: "badge-green", sign: "+" },
     URETIM_CIKISI: { label: "Üretim Çıkışı", className: "badge-red", sign: "-" },
+    // Ürün
+    URETIM_GIRISI: { label: "Üretim Girişi", className: "badge-blue", sign: "+" },
+    SATIS_CIKISI: { label: "Satış Çıkışı", className: "badge-red", sign: "-" },
+    // Ortak
+    MANUEL_GIRIS: { label: "Manuel Giriş", className: "badge-green", sign: "+" },
     MANUEL_CIKIS: { label: "Manuel Çıkış", className: "badge-orange", sign: "-" },
     DUZELTME: { label: "Düzeltme", className: "badge-slate", sign: "±" },
   };
@@ -297,8 +330,9 @@ export default async function DashboardPage() {
               ) : (
                 <div>
                   {recentMovements.map((m, i) => {
-                    const cfg = movementTypeConfig[m.type];
+                    const cfg = movementTypeConfig[m.type] || { label: m.type, className: "badge-slate", sign: "" };
                     const amt = parseFloat(m.amount.toString());
+                    const isPositive = m.type === "GIRIS" || m.type === "URETIM_GIRISI" || m.type === "MANUEL_GIRIS";
                     return (
                       <div
                         key={m.id}
@@ -307,11 +341,11 @@ export default async function DashboardPage() {
                         <div className="flex items-center gap-3">
                           <span className={cfg.className}>{cfg.label}</span>
                           <span className="text-sm font-medium text-slate-800">
-                            {m.rawMaterial.name}
+                            {m.itemName}
                           </span>
                         </div>
-                        <span className={`text-sm font-semibold ${m.type === "GIRIS" ? "text-green-600" : "text-red-600"}`}>
-                          {cfg.sign}{amt.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {m.rawMaterial.unit}
+                        <span className={`text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
+                          {cfg.sign}{amt.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {m.unit}
                         </span>
                       </div>
                     );

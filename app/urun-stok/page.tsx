@@ -8,20 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default async function UrunStokPage() {
-  const [products, recentMovements] = await Promise.all([
-    getProductsWithStock(),
-    getProductStockMovements(undefined, 50),
-  ]);
+  const products = await getProductsWithStock();
 
   // Prisma'nın Decimal ve Date objelerini plain object'e (string'e) çeviriyoruz
   // Next.js Server Component -> Client Component aktarımında bu zorunludur.
   const serializedProducts = JSON.parse(JSON.stringify(products));
-  const serializedMovements = JSON.parse(JSON.stringify(recentMovements));
 
   return (
     <UrunStokClient
       products={serializedProducts}
-      recentMovements={serializedMovements}
     />
   );
 }

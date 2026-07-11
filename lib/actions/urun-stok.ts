@@ -20,6 +20,51 @@ export async function getProductStockMovements(productId?: string, limit?: numbe
   });
 }
 
+export interface ProductMovementFilters {
+  productId?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export async function getProductStockMovementsPaginated(filters: ProductMovementFilters = {}) {
+  await requireAuth();
+
+  const { productId, type, startDate, endDate, page = 1, pageSize = 20 } = filters;
+
+  const where: Record<string, unknown> = {};
+
+  if (productId) where.productId = productId;
+  if (type) where.type = type;
+  if (startDate || endDate) {
+    where.date = {};
+    if (startDate) (where.date as Record<string, unknown>).gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      (where.date as Record<string, unknown>).lte = end;
+    }
+  }
+
+  const [movements, total] = await Promise.all([
+    prisma.productStockMovement.findMany({
+      where,
+      orderBy: { date: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        product: true,
+        productionRecord: true,
+      },
+    }),
+    prisma.productStockMovement.count({ where }),
+  ]);
+
+  return { movements, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+}
+
 // ─────────────────────────────────────────────
 // Ürün Stok Durumu (tüm ürünler, stok bilgisiyle)
 // ─────────────────────────────────────────────
