@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { Modal } from "@/components/ui/Modal";
 import {
   createRawMaterial,
@@ -35,7 +35,28 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
   const [selected, setSelected] = useState<RawMaterial | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name_asc" | "name_desc" | "stock_asc" | "stock_desc">("name_asc");
   const [isPending, startTransition] = useTransition();
+
+  const filteredData = useMemo(() => {
+    let result = data;
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(m => m.name.toLowerCase().includes(q));
+    }
+    return [...result].sort((a, b) => {
+      const stockA = parseFloat(a.currentStock.toString());
+      const stockB = parseFloat(b.currentStock.toString());
+      switch (sortBy) {
+        case "name_asc": return a.name.localeCompare(b.name, "tr-TR");
+        case "name_desc": return b.name.localeCompare(a.name, "tr-TR");
+        case "stock_asc": return stockA - stockB;
+        case "stock_desc": return stockB - stockA;
+        default: return 0;
+      }
+    });
+  }, [data, searchQuery, sortBy]);
 
   const closeModal = () => {
     setModal(null);
@@ -154,12 +175,43 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
 
         {/* Table */}
         <div className="card">
-          <div className="card-header flex items-center justify-between">
-            <h2 className="font-semibold text-slate-700">Hammadde Listesi</h2>
-            <span className="text-sm text-slate-400">{data.length} kayıt</span>
+          <div className="card-header flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <h2 className="font-semibold text-slate-700 flex-shrink-0">Hammadde Listesi</h2>
+            
+            <div className="flex flex-1 w-full md:max-w-xl gap-3 items-center justify-end">
+              {/* Arama Kutusu */}
+              <div className="relative flex-1 max-w-xs">
+                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  className="form-input pl-9 text-sm py-1.5"
+                  placeholder="Hammadde ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Sıralama Kutusu */}
+              <div className="flex-shrink-0">
+                <select
+                  className="form-select text-sm py-1.5"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                >
+                  <option value="name_asc">A'dan Z'ye</option>
+                  <option value="name_desc">Z'den A'ya</option>
+                  <option value="stock_desc">Stok: Önce En Çok</option>
+                  <option value="stock_asc">Stok: Önce En Az</option>
+                </select>
+              </div>
+              
+              <span className="text-sm text-slate-400 hidden lg:inline-block flex-shrink-0">{filteredData.length} hammadde</span>
+            </div>
           </div>
           <div className="table-wrapper rounded-t-none rounded-b-xl border-0">
-            {data.length === 0 ? (
+            {filteredData.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +235,7 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((m) => {
+                  {filteredData.map((m) => {
                     const critical = isCritical(m.currentStock, m.criticalLevel);
                     return (
                       <tr key={m.id}>
