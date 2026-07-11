@@ -46,6 +46,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
   const [success, setSuccess] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name_asc" | "name_desc" | "recipe_desc" | "recipe_asc">("name_asc");
+  const [newRecipes, setNewRecipes] = useState<{rawMaterialId: string, quantityPerUnit: string, wastePercentage: string}[]>([]);
   const [isPending, startTransition] = useTransition();
 
   // Ürün listesi arama ve sıralama
@@ -84,6 +85,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
     setSelected(null);
     setError("");
     setRecipeError("");
+    setNewRecipes([]);
   };
 
   const showSuccess = (msg: string) => {
@@ -93,6 +95,13 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
 
   const handleCreate = async (formData: FormData) => {
     setError("");
+    
+    // Geçerli reçete satırlarını filtrele ve formData'ya ekle
+    const validRecipes = newRecipes.filter(r => r.rawMaterialId && r.quantityPerUnit);
+    if (validRecipes.length > 0) {
+      formData.append("recipes", JSON.stringify(validRecipes));
+    }
+
     startTransition(async () => {
       try {
         await createProduct(formData);
@@ -235,7 +244,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                   <option value="name_asc">A'dan Z'ye</option>
                   <option value="name_desc">Z'den A'ya</option>
                   <option value="recipe_desc">Hammadde: Önce En Çok</option>
-                  <option value="recipe_asc">Hammadde: Önce En Az</option>
+                  <option value="recipe_asc">Reçetesi Olmayanlar Önce</option>
                 </select>
               </div>
               
@@ -334,6 +343,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
         isOpen={modal === "create"}
         onClose={closeModal}
         title="Yeni Ürün Ekle"
+        size="lg"
         footer={
           <>
             <button className="btn btn-secondary" onClick={closeModal}>İptal</button>
@@ -344,20 +354,107 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
         }
       >
         {error && <div className="alert-error mb-2">{error}</div>}
-        <form id="form-create-urun" action={handleCreate} className="space-y-4">
-          <div>
-            <label className="form-label">Ürün Adı *</label>
-            <input name="name" required className="form-input" placeholder="örn: PVC Boru 10mm" />
+        <form id="form-create-urun" action={handleCreate} className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label className="form-label">Ürün Adı *</label>
+              <input name="name" required className="form-input" placeholder="örn: PVC Boru 10mm" />
+            </div>
+            <div>
+              <label className="form-label">Ürün Kodu <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+              <input
+                name="code"
+                className="form-input font-mono"
+                placeholder="örn: 602051Z"
+                autoComplete="off"
+              />
+              <p className="text-xs text-slate-400 mt-1">Benzersiz bir kod — üretim formunda arama için kullanılır.</p>
+            </div>
           </div>
-          <div>
-            <label className="form-label">Ürün Kodu <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
-            <input
-              name="code"
-              className="form-input font-mono"
-              placeholder="örn: 602051Z"
-              autoComplete="off"
-            />
-            <p className="text-xs text-slate-400 mt-1">Benzersiz bir kod — üretim formunda arama için kullanılır.</p>
+
+          <div className="border-t border-slate-200 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="form-label mb-0 text-slate-700">Başlangıç Reçetesi (Opsiyonel)</label>
+              <button
+                type="button"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                onClick={() => setNewRecipes([...newRecipes, { rawMaterialId: "", quantityPerUnit: "", wastePercentage: "" }])}
+              >
+                + Hammadde Ekle
+              </button>
+            </div>
+            
+            {newRecipes.length === 0 ? (
+              <p className="text-sm text-slate-500">Ürünü oluşturduktan sonra da reçete tanımlayabilirsiniz.</p>
+            ) : (
+              <div className="space-y-3">
+                {newRecipes.map((r, idx) => (
+                  <div key={idx} className="flex gap-2 items-end bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <div className="flex-1">
+                      <label className="form-label text-xs">Hammadde</label>
+                      <select 
+                        required
+                        className="form-select text-sm py-1.5"
+                        value={r.rawMaterialId}
+                        onChange={(e) => {
+                          const arr = [...newRecipes];
+                          arr[idx].rawMaterialId = e.target.value;
+                          setNewRecipes(arr);
+                        }}
+                      >
+                        <option value="">Seçin...</option>
+                        {rawMaterials.map(m => (
+                          <option key={m.id} value={m.id} disabled={newRecipes.some((nr, i) => i !== idx && nr.rawMaterialId === m.id)}>
+                            {m.name} ({m.unit})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-28">
+                      <label className="form-label text-xs">Miktar</label>
+                      <input
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        required
+                        className="form-input text-sm py-1.5"
+                        placeholder="0"
+                        value={r.quantityPerUnit}
+                        onChange={(e) => {
+                          const arr = [...newRecipes];
+                          arr[idx].quantityPerUnit = e.target.value;
+                          setNewRecipes(arr);
+                        }}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="form-label text-xs">Fire %</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="form-input text-sm py-1.5"
+                        placeholder="0"
+                        value={r.wastePercentage}
+                        onChange={(e) => {
+                          const arr = [...newRecipes];
+                          arr[idx].wastePercentage = e.target.value;
+                          setNewRecipes(arr);
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm mb-[1px] px-2"
+                      onClick={() => setNewRecipes(newRecipes.filter((_, i) => i !== idx))}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </form>
       </Modal>

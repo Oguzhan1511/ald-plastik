@@ -42,8 +42,26 @@ export async function createProduct(formData: FormData) {
     if (existingCode) throw new Error(`"${codeRaw}" kodu zaten başka bir ürüne ait.`);
   }
 
+  const recipesRaw = formData.get("recipes") as string;
+  let recipesToCreate: any[] = [];
+  if (recipesRaw) {
+    try {
+      recipesToCreate = JSON.parse(recipesRaw);
+    } catch (e) {}
+  }
+
   await prisma.product.create({
-    data: { name: name.trim(), code: codeRaw },
+    data: { 
+      name: name.trim(), 
+      code: codeRaw,
+      recipes: recipesToCreate.length > 0 ? {
+        create: recipesToCreate.map(r => ({
+          rawMaterialId: r.rawMaterialId,
+          quantityPerUnit: parseFloat(r.quantityPerUnit),
+          wastePercentage: (parseFloat(r.wastePercentage) || 0) / 100
+        }))
+      } : undefined
+    },
   });
 
   revalidatePath("/urunler");
