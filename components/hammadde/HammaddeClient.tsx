@@ -49,7 +49,10 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
     let result = data;
     const q = searchQuery.trim().toLowerCase();
     if (q) {
-      result = result.filter(m => m.name.toLowerCase().includes(q));
+      result = result.filter(m => 
+        m.name.toLowerCase().includes(q) || 
+        (m.code && m.code.toLowerCase().includes(q))
+      );
     }
     return [...result].sort((a, b) => {
       const stockA = parseFloat(a.currentStock.toString());
@@ -193,7 +196,7 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
                 <input
                   type="text"
                   className="form-input pl-9 text-sm py-1.5"
-                  placeholder="Hammadde ara..."
+                  placeholder="Ad veya kod ile ara..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -234,6 +237,7 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
                 <thead>
                   <tr>
                     <th>Hammadde Adı</th>
+                    <th>Kod</th>
                     <th>Mevcut Stok</th>
                     <th>Kritik Seviye</th>
                     <th>Durum</th>
@@ -246,6 +250,13 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
                     return (
                       <tr key={m.id}>
                         <td className="font-medium text-slate-800">{m.name}</td>
+                        <td>
+                          {m.code ? (
+                            <span className="badge-blue font-mono text-xs">{m.code}</span>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
                         <td>
                           <span className={`font-semibold ${critical ? "text-red-600" : "text-slate-700"}`}>
                             {formatStock(m.currentStock, m.unit)}
@@ -334,6 +345,14 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
             />
           </div>
           <div>
+            <label className="form-label">Hammadde Kodu (opsiyonel)</label>
+            <input
+              name="code"
+              className="form-input"
+              placeholder="örn: 951013H"
+            />
+          </div>
+          <div>
             <label className="form-label">Birim *</label>
             <select name="unit" required className="form-select">
               <option value="">Birim seçin...</option>
@@ -404,6 +423,15 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
               required
               defaultValue={selected?.name}
               className="form-input"
+            />
+          </div>
+          <div>
+            <label className="form-label">Hammadde Kodu (opsiyonel)</label>
+            <input
+              name="code"
+              defaultValue={selected?.code || ""}
+              className="form-input"
+              placeholder="örn: 951013H"
             />
           </div>
           <div>

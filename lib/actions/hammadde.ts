@@ -22,6 +22,7 @@ export async function createRawMaterial(formData: FormData) {
   await requireAuth();
 
   const name = formData.get("name") as string;
+  const code = formData.get("code") as string;
   const unit = formData.get("unit") as string;
   const criticalLevelStr = formData.get("criticalLevel") as string;
 
@@ -40,9 +41,17 @@ export async function createRawMaterial(formData: FormData) {
   const existing = await prisma.rawMaterial.findUnique({ where: { name: name.trim() } });
   if (existing) throw new Error(`"${name}" adında bir hammadde zaten mevcut.`);
 
+  const codeValue = code && code.trim() !== "" ? code.trim() : null;
+
+  if (codeValue) {
+    const existingCode = await prisma.rawMaterial.findUnique({ where: { code: codeValue } });
+    if (existingCode) throw new Error(`"${codeValue}" koduna sahip bir hammadde zaten mevcut.`);
+  }
+
   const material = await prisma.rawMaterial.create({
     data: {
       name: name.trim(),
+      code: codeValue,
       unit: unit.trim(),
       currentStock,
       criticalLevel,
@@ -73,6 +82,7 @@ export async function updateRawMaterial(id: string, formData: FormData) {
   await requireAuth();
 
   const name = formData.get("name") as string;
+  const code = formData.get("code") as string;
   const unit = formData.get("unit") as string;
   const criticalLevelStr = formData.get("criticalLevel") as string;
 
@@ -90,9 +100,18 @@ export async function updateRawMaterial(id: string, formData: FormData) {
   });
   if (existing) throw new Error(`"${name}" adında başka bir hammadde zaten mevcut.`);
 
+  const codeValue = code && code.trim() !== "" ? code.trim() : null;
+
+  if (codeValue) {
+    const existingCode = await prisma.rawMaterial.findFirst({
+      where: { code: codeValue, NOT: { id } },
+    });
+    if (existingCode) throw new Error(`"${codeValue}" koduna sahip başka bir hammadde zaten mevcut.`);
+  }
+
   await prisma.rawMaterial.update({
     where: { id },
-    data: { name: name.trim(), unit: unit.trim(), criticalLevel },
+    data: { name: name.trim(), code: codeValue, unit: unit.trim(), criticalLevel },
   });
 
   revalidatePath("/hammaddeler");

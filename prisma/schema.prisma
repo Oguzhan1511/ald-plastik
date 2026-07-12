@@ -18,6 +18,7 @@ datasource db {
 model RawMaterial {
   id              String   @id @default(cuid())
   name            String   @unique
+  code            String?  @unique // Hammadde kodu (örn. 951013H)
   unit            String   // gram, kg, litre, adet, vb.
   currentStock    Decimal  @default(0)
   criticalLevel   Decimal? // Opsiyonel — bu seviyenin altına düşünce uyarı
