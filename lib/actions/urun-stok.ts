@@ -76,12 +76,14 @@ export async function getProductsWithStock() {
       id: true,
       name: true,
       code: true,
+      parentProduct: true,
       currentStock: true,
       criticalLevel: true,
       updatedAt: true,
     },
   });
 }
+
 
 // ─────────────────────────────────────────────
 // Ürün Stok Çıkışı (Satış / Sevkiyat)

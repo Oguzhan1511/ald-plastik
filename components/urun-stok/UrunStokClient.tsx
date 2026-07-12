@@ -9,6 +9,7 @@ interface ProductStock {
   id: string;
   name: string;
   code: string | null;
+  parentProduct: string | null;
   currentStock: Decimal;
   criticalLevel: Decimal | null;
   updatedAt: Date;
@@ -90,7 +91,8 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          (p.code && p.code.toLowerCase().includes(q))
+          (p.code && p.code.toLowerCase().includes(q)) ||
+          (p.parentProduct && p.parentProduct.toLowerCase().includes(q))
       );
     }
 
@@ -200,6 +202,7 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
                 <thead>
                   <tr>
                     <th>Ürün</th>
+                    <th>Ait Olduğu Mamül</th>
                     <th>Kod</th>
                     <th>Mevcut Stok</th>
                     <th>Durum</th>
@@ -218,6 +221,9 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
                     return (
                       <tr key={p.id}>
                         <td className="font-medium text-slate-800">{p.name}</td>
+                        <td className="text-slate-600 text-sm">
+                          {p.parentProduct || <span className="text-slate-300">—</span>}
+                        </td>
                         <td>
                           {p.code ? (
                             <span className="badge-blue font-mono text-xs">{p.code}</span>
