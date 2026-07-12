@@ -153,7 +153,7 @@ async function main() {
       productSkipped++;
     } else {
       // İsim çakışması kontrolü
-      const byName = await prisma.product.findUnique({ where: { name } });
+      const byName = await prisma.product.findFirst({ where: { name } });
       if (byName) {
         // İsim var ama kodu yok — kodu güncelle
         await prisma.product.update({

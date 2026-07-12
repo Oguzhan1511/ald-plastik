@@ -37,8 +37,9 @@ model RawMaterial {
 // ─────────────────────────────────────────────
 model Product {
   id               String   @id @default(cuid())
-  name             String   @unique
+  name             String
   code             String?  @unique // İşletmenin ürün kodu (örn. "602051Z")
+  parentProduct    String?  // Ait olduğu mamül
   unitWeight       Decimal? // Bir adedinin toplam gramajı (bilgi amaçlı)
   currentStock     Decimal  @default(0) // Mevcut ürün stoku (adet)
   criticalLevel    Decimal? // Bu seviyenin altına düşünce uyarı

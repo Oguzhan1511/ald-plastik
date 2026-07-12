@@ -17,6 +17,12 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #f1f5f9;
   color: #1e293b;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
 }
 
 @layer components {
@@ -31,11 +37,11 @@ body {
   }
 
   .page-header {
-    @apply bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between sticky top-0 z-10;
+    @apply bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-8 py-5 flex items-center justify-between sticky top-0 z-10;
   }
 
   .page-title {
-    @apply text-xl font-bold text-slate-800;
+    @apply text-xl font-bold text-slate-800 dark:text-slate-100;
   }
 
   .page-body {
@@ -44,11 +50,11 @@ body {
 
   /* ─── Cards ─── */
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+    @apply bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm;
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-slate-100;
+    @apply px-6 py-4 border-b border-slate-100 dark:border-slate-700;
   }
 
   .card-body {
@@ -56,12 +62,12 @@ body {
   }
 
   .stat-card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm p-6;
+    @apply bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6;
   }
 
   /* ─── Buttons ─── */
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-900;
   }
 
   .btn-primary {
@@ -69,15 +75,15 @@ body {
   }
 
   .btn-secondary {
-    @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-slate-400;
+    @apply btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 focus:ring-slate-400;
   }
 
   .btn-danger {
-    @apply btn bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-400;
+    @apply btn bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 focus:ring-red-400;
   }
 
   .btn-success {
-    @apply btn bg-green-50 text-green-700 hover:bg-green-100 focus:ring-green-400;
+    @apply btn bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 focus:ring-green-400;
   }
 
   .btn-sm {
@@ -94,32 +100,32 @@ body {
   }
 
   .badge-red {
-    @apply badge bg-red-100 text-red-700;
+    @apply badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300;
   }
 
   .badge-green {
-    @apply badge bg-green-100 text-green-700;
+    @apply badge bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300;
   }
 
   .badge-blue {
-    @apply badge bg-blue-100 text-blue-700;
+    @apply badge bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300;
   }
 
   .badge-yellow {
-    @apply badge bg-yellow-100 text-yellow-700;
+    @apply badge bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300;
   }
 
   .badge-slate {
-    @apply badge bg-slate-100 text-slate-600;
+    @apply badge bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300;
   }
 
   .badge-orange {
-    @apply badge bg-orange-100 text-orange-700;
+    @apply badge bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300;
   }
 
   /* ─── Table ─── */
   .table-wrapper {
-    @apply overflow-x-auto rounded-xl border border-slate-200;
+    @apply overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700;
   }
 
   .data-table {
@@ -127,15 +133,15 @@ body {
   }
 
   .data-table thead {
-    @apply bg-slate-50 border-b border-slate-200;
+    @apply bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700;
   }
 
   .data-table thead th {
-    @apply px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider;
+    @apply px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider;
   }
 
   .data-table tbody tr {
-    @apply border-b border-slate-100 hover:bg-slate-50 transition-colors;
+    @apply border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors;
   }
 
   .data-table tbody tr:last-child {
@@ -143,24 +149,24 @@ body {
   }
 
   .data-table tbody td {
-    @apply px-4 py-3 text-slate-700;
+    @apply px-4 py-3 text-slate-700 dark:text-slate-300;
   }
 
   /* ─── Form ─── */
   .form-label {
-    @apply block text-sm font-medium text-slate-700 mb-1.5;
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5;
   }
 
   .form-input {
-    @apply block w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    @apply block w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
   }
 
   .form-select {
-    @apply form-input appearance-none bg-white cursor-pointer;
+    @apply form-input appearance-none bg-white dark:bg-slate-800 cursor-pointer;
   }
 
   .form-error {
-    @apply text-xs text-red-600 mt-1;
+    @apply text-xs text-red-600 dark:text-red-400 mt-1;
   }
 
   /* ─── Alert / Toast ─── */
@@ -169,19 +175,19 @@ body {
   }
 
   .alert-error {
-    @apply alert bg-red-50 text-red-700 border border-red-200;
+    @apply alert bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800;
   }
 
   .alert-success {
-    @apply alert bg-green-50 text-green-700 border border-green-200;
+    @apply alert bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800;
   }
 
   .alert-warning {
-    @apply alert bg-yellow-50 text-yellow-700 border border-yellow-200;
+    @apply alert bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800;
   }
 
   .alert-info {
-    @apply alert bg-blue-50 text-blue-700 border border-blue-200;
+    @apply alert bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800;
   }
 
   /* ─── Modal ─── */
@@ -190,11 +196,11 @@ body {
   }
 
   .modal-box {
-    @apply bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto;
+    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto;
   }
 
   .modal-header {
-    @apply flex items-center justify-between px-6 py-4 border-b border-slate-100;
+    @apply flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700;
   }
 
   .modal-body {
@@ -202,7 +208,7 @@ body {
   }
 
   .modal-footer {
-    @apply flex justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl;
+    @apply flex justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-b-2xl;
   }
 
   /* ─── Sidebar ─── */
@@ -237,7 +243,7 @@ body {
   }
 
   .page-btn {
-    @apply px-3 py-1.5 text-sm rounded-lg border border-slate-200 font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
+    @apply px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
   }
 
   .page-btn.active {
@@ -250,6 +256,6 @@ body {
   }
 
   .empty-state-icon {
-    @apply w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400;
+    @apply w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500;
   }
 }

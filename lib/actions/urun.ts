@@ -31,11 +31,20 @@ export async function createProduct(formData: FormData) {
 
   const name = formData.get("name") as string;
   const codeRaw = (formData.get("code") as string)?.trim() || null;
+  const parentProduct = (formData.get("parentProduct") as string)?.trim() || null;
 
   if (!name?.trim()) throw new Error("Ürün adı zorunludur.");
 
-  const existing = await prisma.product.findUnique({ where: { name: name.trim() } });
-  if (existing) throw new Error(`"${name}" adında bir ürün zaten mevcut.`);
+  const existing = await prisma.product.findFirst({ where: { name: name.trim() } });
+  let warningMessage: string | undefined;
+
+  if (existing) {
+    if (existing.code === codeRaw) {
+      throw new Error(`"${name}" adında ve aynı koda sahip bir ürün zaten mevcut.`);
+    } else {
+      warningMessage = `"${name}" adında başka bir ürün mevcut, ancak kodu farklı olduğu için kaydedildi.`;
+    }
+  }
 
   if (codeRaw) {
     const existingCode = await prisma.product.findUnique({ where: { code: codeRaw } });
@@ -54,6 +63,7 @@ export async function createProduct(formData: FormData) {
     data: { 
       name: name.trim(), 
       code: codeRaw,
+      parentProduct,
       recipes: recipesToCreate.length > 0 ? {
         create: recipesToCreate.map(r => ({
           rawMaterialId: r.rawMaterialId,
@@ -65,7 +75,7 @@ export async function createProduct(formData: FormData) {
   });
 
   revalidatePath("/urunler");
-  return { success: true };
+  return { success: true, warning: warningMessage };
 }
 
 // ─────────────────────────────────────────────
@@ -76,13 +86,22 @@ export async function updateProduct(id: string, formData: FormData) {
 
   const name = formData.get("name") as string;
   const codeRaw = (formData.get("code") as string)?.trim() || null;
+  const parentProduct = (formData.get("parentProduct") as string)?.trim() || null;
 
   if (!name?.trim()) throw new Error("Ürün adı zorunludur.");
 
   const existing = await prisma.product.findFirst({
     where: { name: name.trim(), NOT: { id } },
   });
-  if (existing) throw new Error(`"${name}" adında başka bir ürün zaten mevcut.`);
+  let warningMessage: string | undefined;
+
+  if (existing) {
+    if (existing.code === codeRaw) {
+      throw new Error(`"${name}" adında ve aynı koda sahip başka bir ürün zaten mevcut.`);
+    } else {
+      warningMessage = `"${name}" adında başka bir ürün mevcut, ancak kodu farklı olduğu için güncellendi.`;
+    }
+  }
 
   if (codeRaw) {
     const existingCode = await prisma.product.findFirst({
@@ -93,11 +112,11 @@ export async function updateProduct(id: string, formData: FormData) {
 
   await prisma.product.update({
     where: { id },
-    data: { name: name.trim(), code: codeRaw },
+    data: { name: name.trim(), code: codeRaw, parentProduct },
   });
 
   revalidatePath("/urunler");
-  return { success: true };
+  return { success: true, warning: warningMessage };
 }
 
 // ─────────────────────────────────────────────

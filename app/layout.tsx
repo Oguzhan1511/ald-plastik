@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SessionProvider } from "@/components/layout/SessionProvider";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "ALD Plastik — Stok Takip Sistemi",
@@ -19,18 +20,20 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="tr">
+    <html lang="tr" suppressHydrationWarning>
       <body>
-        <SessionProvider session={session}>
-          {session ? (
-            <div className="page-wrapper">
-              <Sidebar />
-              <main className="main-content">{children}</main>
-            </div>
-          ) : (
-            <>{children}</>
-          )}
-        </SessionProvider>
+        <ThemeProvider>
+          <SessionProvider session={session}>
+            {session ? (
+              <div className="page-wrapper">
+                <Sidebar />
+                <main className="main-content">{children}</main>
+              </div>
+            ) : (
+              <>{children}</>
+            )}
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

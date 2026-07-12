@@ -26,6 +26,7 @@ interface ProductWithRecipes {
   id: string;
   name: string;
   code: string | null;
+  parentProduct: string | null;
   unitWeight: Decimal | null;
   createdAt: Date;
   recipes: RecipeWithMaterial[];
@@ -114,9 +115,9 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
 
     startTransition(async () => {
       try {
-        await createProduct(formData);
+        const res = await createProduct(formData);
         closeModal();
-        showSuccess("Ürün eklendi.");
+        showSuccess(res.warning || "Ürün eklendi.");
         router.refresh();
       } catch (e: unknown) {
         setError((e as Error).message);
@@ -129,9 +130,9 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
     setError("");
     startTransition(async () => {
       try {
-        await updateProduct(selected.id, formData);
+        const res = await updateProduct(selected.id, formData);
         closeModal();
-        showSuccess("Ürün güncellendi.");
+        showSuccess(res.warning || "Ürün güncellendi.");
         router.refresh();
       } catch (e: unknown) {
         setError((e as Error).message);
@@ -284,6 +285,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                 <thead>
                   <tr>
                     <th>Ürün Adı</th>
+                    <th>Ait Olduğu Mamül</th>
                     <th>Kod</th>
                     <th>Reçete (Hammadde Sayısı)</th>
                     <th>Toplam Gramaj</th>
@@ -299,6 +301,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                     return (
                       <tr key={p.id}>
                         <td className="font-medium text-slate-800">{p.name}</td>
+                        <td className="text-slate-600">{p.parentProduct || <span className="text-slate-300">—</span>}</td>
                         <td>
                           {p.code ? (
                             <span className="badge-blue font-mono text-xs">{p.code}</span>
@@ -319,19 +322,19 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                         <td>
                           <div className="flex items-center gap-1.5">
                             <button
-                              className="btn btn-primary btn-sm"
+                              className="btn btn-primary btn-sm whitespace-nowrap"
                               onClick={() => { setSelected(p); setModal("recete"); }}
                             >
                               Reçete Düzenle
                             </button>
                             <button
-                              className="btn btn-secondary btn-sm"
+                              className="btn btn-secondary btn-sm whitespace-nowrap"
                               onClick={() => { setSelected(p); setModal("edit"); }}
                             >
                               Düzenle
                             </button>
                             <button
-                              className="btn btn-danger btn-sm"
+                              className="btn btn-danger btn-sm whitespace-nowrap"
                               onClick={() => { setSelected(p); setModal("delete"); }}
                             >
                               Sil
@@ -379,6 +382,10 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                 autoComplete="off"
               />
               <p className="text-xs text-slate-400 mt-1">Benzersiz bir kod — üretim formunda arama için kullanılır.</p>
+            </div>
+            <div>
+              <label className="form-label">Ait Olduğu Mamül <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+              <input name="parentProduct" className="form-input" placeholder="örn: Beyaz Koltuk" />
             </div>
           </div>
 
@@ -499,6 +506,15 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
               autoComplete="off"
             />
             <p className="text-xs text-slate-400 mt-1">Benzersiz — boş bırakılırsa silinir.</p>
+          </div>
+          <div>
+            <label className="form-label">Ait Olduğu Mamül <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+            <input
+              name="parentProduct"
+              defaultValue={selected?.parentProduct ?? ""}
+              className="form-input"
+              placeholder="örn: Beyaz Koltuk"
+            />
           </div>
         </form>
       </Modal>
