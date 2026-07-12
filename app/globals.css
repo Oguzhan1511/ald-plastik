@@ -443,3 +443,52 @@ body {
     @apply w-16 h-16 rounded-full flex items-center justify-center mb-4;
   }
 }
+
+/* ─────────────────────────────────────────────────
+   DARK MODE: Tailwind hardcoded renk sınıfı override'ları
+   Component dosyalarına dokunmadan tüm metinleri düzeltir
+   ───────────────────────────────────────────────── */
+
+/* Koyu siyahlar → neredeyse beyaz */
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f9fafb !important;
+}
+
+/* Orta-koyu gri → açık gri */
+.dark .text-slate-700 {
+  color: #f3f4f6 !important;
+}
+
+/* Orta gri → daha okunur açık gri */
+.dark .text-slate-600 {
+  color: #d1d5db !important;
+}
+
+/* Soluk gri → biraz daha açık */
+.dark .text-slate-500 {
+  color: #9ca3af !important;
+}
+
+/* Hafif gri → nötr (genelde zaten açık renk yerde kullanılır) */
+.dark .text-slate-400 {
+  color: #6b7280 !important;
+}
+
+/* Arka plan rengi olarak kullanılan bg-slate-* override'ları */
+.dark .bg-slate-50  { background-color: #1f2937 !important; }
+.dark .bg-slate-100 { background-color: #1f2937 !important; }
+.dark .bg-white     { background-color: var(--bg-card) !important; }
+
+/* Kenar çizgileri */
+.dark .border-slate-100,
+.dark .border-slate-200 { border-color: var(--border) !important; }
+
+/* Stat/bilgi kartlarındaki sayılar ve etiketler */
+.dark .text-2xl.font-bold.text-slate-800 { color: #f9fafb !important; }
+
+/* Sidebar: sidebar daima koyu olduğu için override edilmemeli */
+.sidebar .text-slate-300 { color: #d1d5db !important; }
+.sidebar .text-slate-400 { color: #9ca3af !important; }
+
