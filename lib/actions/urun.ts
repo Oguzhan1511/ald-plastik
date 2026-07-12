@@ -115,6 +115,24 @@ export async function deleteProduct(id: string) {
     );
   }
 
+  const componentCount = await prisma.recipe.count({
+    where: { componentProductId: id },
+  });
+  if (componentCount > 0) {
+    throw new Error(
+      "Bu ürün başka bir ürünün reçetesinde bileşen olarak kullanılıyor. Silmeden önce ilgili reçetelerden kaldırmalısınız."
+    );
+  }
+
+  const stockMovementCount = await prisma.productStockMovement.count({
+    where: { productId: id },
+  });
+  if (stockMovementCount > 0) {
+    throw new Error(
+      "Bu ürünün stok hareketi geçmişi var, silinemez. (Dilerseniz stok miktarını 0'a çekebilirsiniz)"
+    );
+  }
+
   // Recipes will be cascade deleted
   await prisma.product.delete({ where: { id } });
 

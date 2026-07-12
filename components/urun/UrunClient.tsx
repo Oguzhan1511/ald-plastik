@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import {
   createProduct,
@@ -48,6 +49,15 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
   const [sortBy, setSortBy] = useState<"name_asc" | "name_desc" | "recipe_desc" | "recipe_asc">("name_asc");
   const [newRecipes, setNewRecipes] = useState<{rawMaterialId: string, quantityPerUnit: string, wastePercentage: string}[]>([]);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  useEffect(() => {
+    setProducts(initialProducts);
+    if (selected) {
+      const updatedSelected = initialProducts.find((p) => p.id === selected.id);
+      setSelected(updatedSelected || null);
+    }
+  }, [initialProducts, selected?.id]);
 
   // Ürün listesi arama ve sıralama
   const filteredProducts = useMemo(() => {
@@ -107,7 +117,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
         await createProduct(formData);
         closeModal();
         showSuccess("Ürün eklendi.");
-        window.location.reload();
+        router.refresh();
       } catch (e: unknown) {
         setError((e as Error).message);
       }
@@ -122,7 +132,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
         await updateProduct(selected.id, formData);
         closeModal();
         showSuccess("Ürün güncellendi.");
-        window.location.reload();
+        router.refresh();
       } catch (e: unknown) {
         setError((e as Error).message);
       }
@@ -137,7 +147,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
         await deleteProduct(selected.id);
         closeModal();
         showSuccess("Ürün silindi.");
-        window.location.reload();
+        router.refresh();
       } catch (e: unknown) {
         setError((e as Error).message);
       }
@@ -152,7 +162,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
       try {
         await addRecipeLine(formData);
         showSuccess("Reçete satırı eklendi.");
-        window.location.reload();
+        router.refresh();
       } catch (e: unknown) {
         setRecipeError((e as Error).message);
       }
@@ -165,7 +175,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
       try {
         await deleteRecipeLine(recipeId);
         showSuccess("Reçete satırı silindi.");
-        window.location.reload();
+        router.refresh();
       } catch (e: unknown) {
         setRecipeError((e as Error).message);
       }
@@ -405,7 +415,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                         <option value="">Seçin...</option>
                         {rawMaterials.map(m => (
                           <option key={m.id} value={m.id} disabled={newRecipes.some((nr, i) => i !== idx && nr.rawMaterialId === m.id)}>
-                            {m.name} ({m.unit})
+                            {m.name} {m.code ? `(${m.code})` : ""} ({m.unit})
                           </option>
                         ))}
                       </select>
@@ -555,7 +565,10 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                     const wastePercent = parseFloat(r.wastePercentage.toString()) * 100;
                     return (
                       <tr key={r.id}>
-                        <td className="font-medium text-slate-800">{r.rawMaterial.name}</td>
+                        <td className="font-medium text-slate-800">
+                          {r.rawMaterial.name}
+                          {r.rawMaterial.code && <span className="text-slate-400 text-sm ml-1 font-mono">({r.rawMaterial.code})</span>}
+                        </td>
                         <td>
                           {parseFloat(r.quantityPerUnit.toString()).toLocaleString("tr-TR", { maximumFractionDigits: 3 })} {r.rawMaterial.unit}
                         </td>
@@ -605,7 +618,7 @@ export function UrunClient({ initialProducts, rawMaterials }: UrunClientProps) {
                       <option value="">Seçin...</option>
                       {availableMaterials.map((m) => (
                         <option key={m.id} value={m.id}>
-                          {m.name} ({m.unit})
+                          {m.name} {m.code ? `(${m.code})` : ""} ({m.unit})
                         </option>
                       ))}
                     </select>
