@@ -293,14 +293,14 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                         return (
                           <div
                             key={i}
-                            className={`rounded-lg p-3 border ${
-                              isInsufficient
-                                ? "bg-red-50 border-red-200"
-                                : "bg-green-50 border-green-200"
-                            }`}
+                            className="rounded-lg p-3 border"
+                            style={isInsufficient
+                              ? { backgroundColor: "var(--badge-red-bg)", borderColor: "var(--alert-error-border)" }
+                              : { backgroundColor: "var(--badge-green-bg)", borderColor: "var(--alert-success-border)" }
+                            }
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm text-slate-800">
+                              <span className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
                                 {item.name}
                               </span>
                               {isInsufficient ? (
@@ -310,16 +310,19 @@ export function UretimClient({ products, recentProductions }: UretimClientProps)
                               )}
                             </div>
                             <div className="mt-1.5 text-xs space-y-0.5">
-                              <div className="text-slate-500">
+                              <div style={{ color: "var(--text-muted)" }}>
                                 Gerekli (fire dahil):{" "}
-                                <strong className={isInsufficient ? "text-red-700" : "text-slate-700"}>
+                                <strong style={{ color: isInsufficient ? "var(--badge-red-text)" : "var(--text-secondary)" }}>
                                   {item.total.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {item.unit}
                                 </strong>
                               </div>
-                              <div className="text-slate-500">
-                                Mevcut: <strong className="text-slate-700">{item.currentStock.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {item.unit}</strong>
+                              <div style={{ color: "var(--text-muted)" }}>
+                                Mevcut:{" "}
+                                <strong style={{ color: "var(--text-secondary)" }}>
+                                  {item.currentStock.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} {item.unit}
+                                </strong>
                               </div>
-                              <div className="text-slate-400">
+                              <div style={{ color: "var(--text-muted)" }}>
                                 ({item.perUnit} {item.unit}/adet × {qty} adet
                                 {item.wastePercent > 0 && (
                                   <span className="text-orange-500"> + %{item.wastePercent.toLocaleString("tr-TR", { maximumFractionDigits: 1 })} fire</span>
