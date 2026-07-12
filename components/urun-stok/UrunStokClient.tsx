@@ -2,11 +2,7 @@
 
 import { useState, useTransition, useMemo } from "react";
 import { Modal } from "@/components/ui/Modal";
-import {
-  createProductStockExit,
-  createProductStockEntry,
-  adjustProductStock,
-} from "@/lib/actions/urun-stok";
+import { adjustProductStock } from "@/lib/actions/urun-stok";
 import { Decimal } from "@prisma/client/runtime/library";
 
 interface ProductStock {
@@ -22,7 +18,7 @@ interface UrunStokClientProps {
   products: ProductStock[];
 }
 
-type ModalType = "exit" | "entry" | "adjust" | null;
+type ModalType = "adjust" | null;
 
 const typeConfig: Record<string, { label: string; badgeClass: string; sign: string; color: string }> = {
   URETIM_GIRISI: { label: "Üretim Girişi", badgeClass: "badge-blue", sign: "+", color: "text-blue-600" },
@@ -66,37 +62,7 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
     setError("");
   };
 
-  const handleExit = async (formData: FormData) => {
-    if (!selected) return;
-    formData.set("productId", selected.id);
-    setError("");
-    startTransition(async () => {
-      try {
-        await createProductStockExit(formData);
-        closeModal();
-        showSuccess(`${selected.name} için çıkış kaydedildi.`);
-        window.location.reload();
-      } catch (e: unknown) {
-        setError((e as Error).message);
-      }
-    });
-  };
 
-  const handleEntry = async (formData: FormData) => {
-    if (!selected) return;
-    formData.set("productId", selected.id);
-    setError("");
-    startTransition(async () => {
-      try {
-        await createProductStockEntry(formData);
-        closeModal();
-        showSuccess(`${selected.name} için giriş kaydedildi.`);
-        window.location.reload();
-      } catch (e: unknown) {
-        setError((e as Error).message);
-      }
-    });
-  };
 
   const handleAdjust = async (formData: FormData) => {
     if (!selected) return;
@@ -280,18 +246,7 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
                         </td>
                         <td>
                           <div className="flex items-center gap-1.5">
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => openModal("exit", p)}
-                            >
-                              Çıkış
-                            </button>
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => openModal("entry", p)}
-                            >
-                              Giriş
-                            </button>
+
                             <button
                               className="btn btn-primary btn-sm"
                               onClick={() => openModal("adjust", p)}
@@ -310,92 +265,6 @@ export function UrunStokClient({ products }: UrunStokClientProps) {
         </div>
       </div>
 
-      {/* ─── ÇIKIŞ MODAL ─── */}
-      <Modal
-        isOpen={modal === "exit"}
-        onClose={closeModal}
-        title={`Stok Çıkışı — ${selected?.name}`}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={closeModal}>İptal</button>
-            <button form="form-stock-exit" type="submit" className="btn btn-danger" disabled={isPending}>
-              {isPending ? "Kaydediliyor..." : "Çıkışı Kaydet"}
-            </button>
-          </>
-        }
-      >
-        {error && <div className="alert-error mb-3">{error}</div>}
-        {selected && (
-          <div className="mb-4 px-4 py-3 bg-slate-50 rounded-lg text-sm text-slate-600">
-            Mevcut Stok:{" "}
-            <strong className="text-slate-800">
-              {parseFloat(selected.currentStock.toString()).toLocaleString("tr-TR")} adet
-            </strong>
-          </div>
-        )}
-        <form id="form-stock-exit" action={handleExit} className="space-y-4">
-          <div>
-            <label className="form-label">Çıkış Miktarı (adet) *</label>
-            <input
-              name="quantity"
-              type="number"
-              min="1"
-              step="1"
-              required
-              className="form-input"
-              placeholder="örn: 500"
-            />
-          </div>
-          <div>
-            <label className="form-label">Tarih & Saat *</label>
-            <input name="date" type="datetime-local" required defaultValue={todayLocal} className="form-input" />
-          </div>
-          <div>
-            <label className="form-label">Açıklama (opsiyonel)</label>
-            <input name="description" type="text" className="form-input" placeholder="Müşteri, sipariş no vb." />
-          </div>
-        </form>
-      </Modal>
-
-      {/* ─── GİRİŞ MODAL ─── */}
-      <Modal
-        isOpen={modal === "entry"}
-        onClose={closeModal}
-        title={`Manuel Stok Girişi — ${selected?.name}`}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={closeModal}>İptal</button>
-            <button form="form-stock-entry" type="submit" className="btn btn-primary" disabled={isPending}>
-              {isPending ? "Kaydediliyor..." : "Girişi Kaydet"}
-            </button>
-          </>
-        }
-      >
-        {error && <div className="alert-error mb-3">{error}</div>}
-        <form id="form-stock-entry" action={handleEntry} className="space-y-4">
-          <div>
-            <label className="form-label">Giriş Miktarı (adet) *</label>
-            <input
-              name="quantity"
-              type="number"
-              min="1"
-              step="1"
-              required
-              className="form-input"
-              placeholder="örn: 1000"
-            />
-          </div>
-          <input type="hidden" name="type" value="MANUEL_GIRIS" />
-          <div>
-            <label className="form-label">Tarih & Saat *</label>
-            <input name="date" type="datetime-local" required defaultValue={todayLocal} className="form-input" />
-          </div>
-          <div>
-            <label className="form-label">Açıklama (opsiyonel)</label>
-            <input name="description" type="text" className="form-input" placeholder="İade, sayım düzeltme vb." />
-          </div>
-        </form>
-      </Modal>
 
       {/* ─── DÜZELTME MODAL ─── */}
       <Modal

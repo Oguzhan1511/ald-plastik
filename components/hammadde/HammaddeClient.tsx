@@ -6,8 +6,6 @@ import {
   createRawMaterial,
   updateRawMaterial,
   deleteRawMaterial,
-  addStockEntry,
-  addStockExit,
   adjustStock,
 } from "@/lib/actions/hammadde";
 import { RawMaterial } from "@prisma/client";
@@ -17,7 +15,7 @@ interface HammaddeClientProps {
   initialData: RawMaterial[];
 }
 
-type ModalType = "create" | "edit" | "stokGiris" | "stokCikis" | "duzeltme" | "delete" | null;
+type ModalType = "create" | "edit" | "duzeltme" | "delete" | null;
 
 function formatStock(val: Decimal | number, unit: string) {
   const num = typeof val === "number" ? val : parseFloat(val.toString());
@@ -124,37 +122,6 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
     });
   };
 
-  const handleStokGiris = async (formData: FormData) => {
-    if (!selected) return;
-    setError("");
-    formData.set("rawMaterialId", selected.id);
-    startTransition(async () => {
-      try {
-        await addStockEntry(formData);
-        closeModal();
-        showSuccess(`${selected.name} için stok girişi kaydedildi.`);
-        window.location.reload();
-      } catch (e: unknown) {
-        setError((e as Error).message);
-      }
-    });
-  };
-
-  const handleStokCikis = async (formData: FormData) => {
-    if (!selected) return;
-    setError("");
-    formData.set("rawMaterialId", selected.id);
-    startTransition(async () => {
-      try {
-        await addStockExit(formData);
-        closeModal();
-        showSuccess(`${selected.name} için stok çıkışı kaydedildi.`);
-        window.location.reload();
-      } catch (e: unknown) {
-        setError((e as Error).message);
-      }
-    });
-  };
 
   const handleDuzeltme = async (formData: FormData) => {
     if (!selected) return;
@@ -310,20 +277,7 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
                         </td>
                         <td>
                           <div className="flex items-center gap-1.5">
-                            <button
-                              className="btn btn-success btn-sm"
-                              onClick={() => { setSelected(m); setModal("stokGiris"); }}
-                              title="Stok Girişi Yap"
-                            >
-                              Giriş
-                            </button>
-                            <button
-                              className="btn btn-warning btn-sm"
-                              onClick={() => { setSelected(m); setModal("stokCikis"); }}
-                              title="Stok Çıkışı Yap"
-                            >
-                              Çıkış
-                            </button>
+
                             <button
                               className="btn btn-secondary btn-sm"
                               onClick={() => { setSelected(m); setModal("duzeltme"); }}
@@ -506,138 +460,11 @@ export function HammaddeClient({ initialData }: HammaddeClientProps) {
             />
           </div>
           <div className="alert-info text-xs">
-            Not: Stok miktarını değiştirmek için &quot;Stok Girişi Yap&quot; veya Manuel Çıkış kullanın.
+            Not: Stok miktarını değiştirmek için "Düzelt" butonunu kullanın.
           </div>
         </form>
       </Modal>
 
-      {/* ─── STOK GİRİŞİ MODAL ─── */}
-      <Modal
-        isOpen={modal === "stokGiris"}
-        onClose={closeModal}
-        title={`Stok Girişi — ${selected?.name}`}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={closeModal}>İptal</button>
-            <button
-              form="form-stok-giris"
-              type="submit"
-              className="btn btn-primary"
-              disabled={isPending}
-            >
-              {isPending ? "Kaydediliyor..." : "Stok Ekle"}
-            </button>
-          </>
-        }
-      >
-        {error && <div className="alert-error mb-2">{error}</div>}
-        <div className="bg-slate-50 rounded-lg p-3 mb-4 text-sm">
-          <span className="text-slate-500">Mevcut Stok: </span>
-          <span className="font-semibold text-slate-800">
-            {selected ? formatStock(selected.currentStock, selected.unit) : "—"}
-          </span>
-        </div>
-        <form
-          id="form-stok-giris"
-          action={handleStokGiris}
-          className="space-y-4"
-        >
-          <div>
-            <label className="form-label">Giriş Miktarı ({selected?.unit}) *</label>
-            <input
-              name="amount"
-              type="number"
-              min="0.001"
-              step="0.001"
-              required
-              className="form-input"
-              placeholder="Eklenecek miktar"
-            />
-          </div>
-          <div>
-            <label className="form-label">Tarih & Saat *</label>
-            <input
-              name="date"
-              type="datetime-local"
-              defaultValue={todayLocal}
-              required
-              className="form-input"
-            />
-          </div>
-          <div>
-            <label className="form-label">Açıklama (opsiyonel)</label>
-            <input
-              name="description"
-              className="form-input"
-              placeholder="örn: Sipariş #1234 teslim alındı"
-            />
-          </div>
-        </form>
-      </Modal>
-
-      {/* ─── STOK ÇIKIŞI MODAL ─── */}
-      <Modal
-        isOpen={modal === "stokCikis"}
-        onClose={closeModal}
-        title={`Stok Çıkışı — ${selected?.name}`}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={closeModal}>İptal</button>
-            <button
-              form="form-stok-cikis"
-              type="submit"
-              className="btn btn-warning"
-              disabled={isPending}
-            >
-              {isPending ? "Kaydediliyor..." : "Stok Düş"}
-            </button>
-          </>
-        }
-      >
-        {error && <div className="alert-error mb-2">{error}</div>}
-        <div className="bg-slate-50 rounded-lg p-3 mb-4 text-sm">
-          <span className="text-slate-500">Mevcut Stok: </span>
-          <span className="font-semibold text-slate-800">
-            {selected ? formatStock(selected.currentStock, selected.unit) : "—"}
-          </span>
-        </div>
-        <form
-          id="form-stok-cikis"
-          action={handleStokCikis}
-          className="space-y-4"
-        >
-          <div>
-            <label className="form-label">Çıkış Miktarı ({selected?.unit}) *</label>
-            <input
-              name="amount"
-              type="number"
-              min="0.001"
-              step="0.001"
-              required
-              className="form-input"
-              placeholder="Düşülecek miktar"
-            />
-          </div>
-          <div>
-            <label className="form-label">Tarih & Saat *</label>
-            <input
-              name="date"
-              type="datetime-local"
-              defaultValue={todayLocal}
-              required
-              className="form-input"
-            />
-          </div>
-          <div>
-            <label className="form-label">Açıklama (opsiyonel)</label>
-            <input
-              name="description"
-              className="form-input"
-              placeholder="örn: Kullanıma verildi, zayi vb."
-            />
-          </div>
-        </form>
-      </Modal>
 
       {/* ─── DÜZELTME MODAL ─── */}
       <Modal
