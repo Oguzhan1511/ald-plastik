@@ -4,25 +4,126 @@
 @tailwind components;
 @tailwind utilities;
 
-
+/* ─── CSS Değişkenleri (Light Mode) ─── */
 :root {
   --sidebar-width: 240px;
+
+  --bg-page:         #f1f5f9;
+  --bg-card:         #ffffff;
+  --bg-card-subtle:  #f8fafc;
+  --bg-hover:        #f1f5f9;
+  --bg-input:        #ffffff;
+  --bg-thead:        #f8fafc;
+
+  --border:          #e2e8f0;
+  --border-subtle:   #f1f5f9;
+
+  --text-primary:    #0f172a;
+  --text-secondary:  #475569;
+  --text-muted:      #94a3b8;
+  --text-placeholder:#94a3b8;
+
+  --badge-blue-bg:   #dbeafe;
+  --badge-blue-text: #1d4ed8;
+  --badge-green-bg:  #dcfce7;
+  --badge-green-text:#15803d;
+  --badge-red-bg:    #fee2e2;
+  --badge-red-text:  #b91c1c;
+  --badge-yellow-bg: #fef9c3;
+  --badge-yellow-text:#854d0e;
+  --badge-orange-bg: #ffedd5;
+  --badge-orange-text:#c2410c;
+  --badge-slate-bg:  #f1f5f9;
+  --badge-slate-text:#475569;
+
+  --btn-secondary-bg:    #f1f5f9;
+  --btn-secondary-text:  #334155;
+  --btn-secondary-hover: #e2e8f0;
+  --btn-danger-bg:       #fff1f2;
+  --btn-danger-text:     #be123c;
+  --btn-danger-hover:    #ffe4e6;
+  --btn-success-bg:      #f0fdf4;
+  --btn-success-text:    #15803d;
+  --btn-success-hover:   #dcfce7;
+
+  --alert-error-bg:     #fff1f2;
+  --alert-error-text:   #be123c;
+  --alert-error-border: #fecdd3;
+  --alert-success-bg:   #f0fdf4;
+  --alert-success-text: #15803d;
+  --alert-success-border:#bbf7d0;
+  --alert-warning-bg:   #fffbeb;
+  --alert-warning-text: #92400e;
+  --alert-warning-border:#fde68a;
+  --alert-info-bg:      #eff6ff;
+  --alert-info-text:    #1d4ed8;
+  --alert-info-border:  #bfdbfe;
 }
 
-* {
-  box-sizing: border-box;
+/* ─── CSS Değişkenleri (Dark Mode) ─── */
+.dark {
+  --bg-page:         #111827;
+  --bg-card:         #1f2937;
+  --bg-card-subtle:  #1a2535;
+  --bg-hover:        #283548;
+  --bg-input:        #1f2937;
+  --bg-thead:        #1a2535;
+
+  --border:          #374151;
+  --border-subtle:   #2d3748;
+
+  --text-primary:    #f9fafb;
+  --text-secondary:  #d1d5db;
+  --text-muted:      #9ca3af;
+  --text-placeholder:#6b7280;
+
+  --badge-blue-bg:   #1e3a5f;
+  --badge-blue-text: #93c5fd;
+  --badge-green-bg:  #14432a;
+  --badge-green-text:#86efac;
+  --badge-red-bg:    #450a0a;
+  --badge-red-text:  #fca5a5;
+  --badge-yellow-bg: #422006;
+  --badge-yellow-text:#fde68a;
+  --badge-orange-bg: #431407;
+  --badge-orange-text:#fdba74;
+  --badge-slate-bg:  #374151;
+  --badge-slate-text:#d1d5db;
+
+  --btn-secondary-bg:    #374151;
+  --btn-secondary-text:  #f3f4f6;
+  --btn-secondary-hover: #4b5563;
+  --btn-danger-bg:       #3b0a0a;
+  --btn-danger-text:     #fca5a5;
+  --btn-danger-hover:    #4c1010;
+  --btn-success-bg:      #052e16;
+  --btn-success-text:    #86efac;
+  --btn-success-hover:   #14432a;
+
+  --alert-error-bg:     #3b0a0a;
+  --alert-error-text:   #fca5a5;
+  --alert-error-border: #7f1d1d;
+  --alert-success-bg:   #052e16;
+  --alert-success-text: #86efac;
+  --alert-success-border:#166534;
+  --alert-warning-bg:   #422006;
+  --alert-warning-text: #fde68a;
+  --alert-warning-border:#78350f;
+  --alert-info-bg:      #1e3a5f;
+  --alert-info-text:    #93c5fd;
+  --alert-info-border:  #1e40af;
 }
+
+/* ─── Base ─── */
+* { box-sizing: border-box; }
+
+html { background-color: var(--bg-page); }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f1f5f9;
-  color: #1e293b;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.dark body {
-  background-color: #0f172a;
-  color: #e2e8f0;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 @layer components {
@@ -34,14 +135,18 @@ body {
   .main-content {
     @apply flex-1 flex flex-col min-h-screen;
     margin-left: var(--sidebar-width);
+    background-color: var(--bg-page);
   }
 
   .page-header {
-    @apply bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-8 py-5 flex items-center justify-between sticky top-0 z-10;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    @apply px-8 py-5 flex items-center justify-between sticky top-0 z-10;
   }
 
   .page-title {
-    @apply text-xl font-bold text-slate-800 dark:text-slate-100;
+    color: var(--text-primary);
+    @apply text-xl font-bold;
   }
 
   .page-body {
@@ -50,11 +155,14 @@ body {
 
   /* ─── Cards ─── */
   .card {
-    @apply bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    @apply rounded-xl shadow-sm;
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-slate-100 dark:border-slate-700;
+    border-bottom: 1px solid var(--border);
+    @apply px-6 py-4;
   }
 
   .card-body {
@@ -62,12 +170,14 @@ body {
   }
 
   .stat-card {
-    @apply bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    @apply rounded-xl shadow-sm p-6;
   }
 
   /* ─── Buttons ─── */
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-900;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1;
   }
 
   .btn-primary {
@@ -75,15 +185,36 @@ body {
   }
 
   .btn-secondary {
-    @apply btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 focus:ring-slate-400;
+    @apply btn focus:ring-gray-400;
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+  }
+  .btn-secondary:hover {
+    background-color: var(--btn-secondary-hover);
   }
 
   .btn-danger {
-    @apply btn bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 focus:ring-red-400;
+    @apply btn focus:ring-red-400;
+    background-color: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+  }
+  .btn-danger:hover {
+    background-color: var(--btn-danger-hover);
   }
 
   .btn-success {
-    @apply btn bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 focus:ring-green-400;
+    @apply btn focus:ring-green-400;
+    background-color: var(--btn-success-bg);
+    color: var(--btn-success-text);
+  }
+  .btn-success:hover {
+    background-color: var(--btn-success-hover);
+  }
+
+  .btn-warning {
+    @apply btn focus:ring-orange-400;
+    background-color: var(--badge-orange-bg);
+    color: var(--badge-orange-text);
   }
 
   .btn-sm {
@@ -100,32 +231,45 @@ body {
   }
 
   .badge-red {
-    @apply badge bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300;
+    @apply badge;
+    background-color: var(--badge-red-bg);
+    color: var(--badge-red-text);
   }
 
   .badge-green {
-    @apply badge bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300;
+    @apply badge;
+    background-color: var(--badge-green-bg);
+    color: var(--badge-green-text);
   }
 
   .badge-blue {
-    @apply badge bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300;
+    @apply badge;
+    background-color: var(--badge-blue-bg);
+    color: var(--badge-blue-text);
   }
 
   .badge-yellow {
-    @apply badge bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300;
+    @apply badge;
+    background-color: var(--badge-yellow-bg);
+    color: var(--badge-yellow-text);
   }
 
   .badge-slate {
-    @apply badge bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300;
+    @apply badge;
+    background-color: var(--badge-slate-bg);
+    color: var(--badge-slate-text);
   }
 
   .badge-orange {
-    @apply badge bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300;
+    @apply badge;
+    background-color: var(--badge-orange-bg);
+    color: var(--badge-orange-text);
   }
 
   /* ─── Table ─── */
   .table-wrapper {
-    @apply overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700;
+    border: 1px solid var(--border);
+    @apply overflow-x-auto rounded-xl;
   }
 
   .data-table {
@@ -133,15 +277,21 @@ body {
   }
 
   .data-table thead {
-    @apply bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700;
+    background-color: var(--bg-thead);
+    border-bottom: 1px solid var(--border);
   }
 
   .data-table thead th {
-    @apply px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider;
+    color: var(--text-muted);
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider;
   }
 
   .data-table tbody tr {
-    @apply border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors;
+    border-bottom: 1px solid var(--border-subtle);
+    @apply transition-colors;
+  }
+  .data-table tbody tr:hover {
+    background-color: var(--bg-hover);
   }
 
   .data-table tbody tr:last-child {
@@ -149,58 +299,82 @@ body {
   }
 
   .data-table tbody td {
-    @apply px-4 py-3 text-slate-700 dark:text-slate-300;
+    color: var(--text-secondary);
+    @apply px-4 py-3;
   }
 
   /* ─── Form ─── */
   .form-label {
-    @apply block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5;
+    color: var(--text-secondary);
+    @apply block text-sm font-medium mb-1.5;
   }
 
   .form-input {
-    @apply block w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    @apply block w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+  }
+  .form-input::placeholder {
+    color: var(--text-placeholder);
   }
 
   .form-select {
-    @apply form-input appearance-none bg-white dark:bg-slate-800 cursor-pointer;
+    @apply form-input appearance-none cursor-pointer;
+    background-color: var(--bg-input);
   }
 
   .form-error {
-    @apply text-xs text-red-600 dark:text-red-400 mt-1;
+    @apply text-xs mt-1;
+    color: var(--badge-red-text);
   }
 
   /* ─── Alert / Toast ─── */
   .alert {
-    @apply rounded-lg px-4 py-3 text-sm font-medium;
+    @apply rounded-lg px-4 py-3 text-sm font-medium border;
   }
 
   .alert-error {
-    @apply alert bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800;
+    @apply alert;
+    background-color: var(--alert-error-bg);
+    color: var(--alert-error-text);
+    border-color: var(--alert-error-border);
   }
 
   .alert-success {
-    @apply alert bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800;
+    @apply alert;
+    background-color: var(--alert-success-bg);
+    color: var(--alert-success-text);
+    border-color: var(--alert-success-border);
   }
 
   .alert-warning {
-    @apply alert bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800;
+    @apply alert;
+    background-color: var(--alert-warning-bg);
+    color: var(--alert-warning-text);
+    border-color: var(--alert-warning-border);
   }
 
   .alert-info {
-    @apply alert bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800;
+    @apply alert;
+    background-color: var(--alert-info-bg);
+    color: var(--alert-info-text);
+    border-color: var(--alert-info-border);
   }
 
   /* ─── Modal ─── */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4;
   }
 
   .modal-box {
-    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto;
+    background-color: var(--bg-card);
+    @apply rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto;
   }
 
   .modal-header {
-    @apply flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700;
+    border-bottom: 1px solid var(--border);
+    @apply flex items-center justify-between px-6 py-4;
   }
 
   .modal-body {
@@ -208,17 +382,19 @@ body {
   }
 
   .modal-footer {
-    @apply flex justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-b-2xl;
+    background-color: var(--bg-card-subtle);
+    border-top: 1px solid var(--border);
+    @apply flex justify-end gap-3 px-6 py-4 rounded-b-2xl;
   }
 
-  /* ─── Sidebar ─── */
+  /* ─── Sidebar (daima koyu) ─── */
   .sidebar {
-    @apply fixed left-0 top-0 h-full bg-slate-900 text-white flex flex-col z-20 shadow-xl;
+    @apply fixed left-0 top-0 h-full bg-gray-950 text-white flex flex-col z-20 shadow-xl;
     width: var(--sidebar-width);
   }
 
   .sidebar-logo {
-    @apply flex items-center gap-3 px-6 py-5 border-b border-slate-700;
+    @apply flex items-center gap-3 px-6 py-5 border-b border-gray-800;
   }
 
   .sidebar-nav {
@@ -226,7 +402,7 @@ body {
   }
 
   .nav-link {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-all duration-150;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-150;
   }
 
   .nav-link.active {
@@ -234,7 +410,7 @@ body {
   }
 
   .sidebar-footer {
-    @apply px-3 py-4 border-t border-slate-700;
+    @apply px-3 py-4 border-t border-gray-800;
   }
 
   /* ─── Pagination ─── */
@@ -243,7 +419,13 @@ body {
   }
 
   .page-btn {
-    @apply px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    background-color: var(--bg-card);
+    @apply px-3 py-1.5 text-sm rounded-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
+  }
+  .page-btn:hover:not(:disabled) {
+    background-color: var(--bg-hover);
   }
 
   .page-btn.active {
@@ -256,6 +438,8 @@ body {
   }
 
   .empty-state-icon {
-    @apply w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500;
+    background-color: var(--bg-hover);
+    color: var(--text-muted);
+    @apply w-16 h-16 rounded-full flex items-center justify-center mb-4;
   }
 }
