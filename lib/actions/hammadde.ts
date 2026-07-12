@@ -184,3 +184,99 @@ export async function addStockEntry(formData: FormData) {
   revalidatePath("/");
   return { success: true };
 }
+
+// ─────────────────────────────────────────────
+// Stok Çıkışı
+// ─────────────────────────────────────────────
+export async function addStockExit(formData: FormData) {
+  await requireAuth();
+
+  const rawMaterialId = formData.get("rawMaterialId") as string;
+  const description = formData.get("description") as string;
+  const dateStr = formData.get("date") as string;
+
+  if (!rawMaterialId) throw new Error("Hammadde seçimi zorunludur.");
+
+  const amount = parseDecimalInput(formData.get("amount") as string, "Miktar");
+  if (amount <= 0) throw new Error("Miktar pozitif bir sayı olmalıdır.");
+
+  const date = dateStr ? new Date(dateStr) : new Date();
+
+  await prisma.$transaction(async (tx) => {
+    const rm = await tx.rawMaterial.findUnique({ where: { id: rawMaterialId } });
+    if (!rm) throw new Error("Hammadde bulunamadı.");
+
+    const current = parseFloat(rm.currentStock.toString());
+    if (current < amount) {
+      throw new Error(`Yetersiz stok! Mevcut: ${current}, İstenen: ${amount}`);
+    }
+
+    await tx.stockMovement.create({
+      data: {
+        rawMaterialId,
+        type: "MANUEL_CIKIS",
+        amount: -amount,
+        date,
+        description: description?.trim() || null,
+      },
+    });
+
+    await tx.rawMaterial.update({
+      where: { id: rawMaterialId },
+      data: { currentStock: { decrement: amount } },
+    });
+  });
+
+  revalidatePath("/hammaddeler");
+  revalidatePath("/hareketler");
+  revalidatePath("/");
+  return { success: true };
+}
+
+// ─────────────────────────────────────────────
+// Stok Düzeltme
+// ─────────────────────────────────────────────
+export async function adjustStock(formData: FormData) {
+  await requireAuth();
+
+  const rawMaterialId = formData.get("rawMaterialId") as string;
+  const description = formData.get("description") as string;
+  const dateStr = formData.get("date") as string;
+
+  if (!rawMaterialId) throw new Error("Hammadde seçimi zorunludur.");
+
+  const newStock = parseDecimalInput(formData.get("newStock") as string, "Yeni Stok Değeri");
+  if (newStock < 0) throw new Error("Stok miktarı negatif olamaz.");
+
+  const date = dateStr ? new Date(dateStr) : new Date();
+
+  await prisma.$transaction(async (tx) => {
+    const rm = await tx.rawMaterial.findUnique({ where: { id: rawMaterialId } });
+    if (!rm) throw new Error("Hammadde bulunamadı.");
+
+    const current = parseFloat(rm.currentStock.toString());
+    const difference = newStock - current;
+
+    if (difference !== 0) {
+      await tx.stockMovement.create({
+        data: {
+          rawMaterialId,
+          type: "DUZELTME",
+          amount: difference,
+          date,
+          description: description?.trim() || null,
+        },
+      });
+
+      await tx.rawMaterial.update({
+        where: { id: rawMaterialId },
+        data: { currentStock: newStock },
+      });
+    }
+  });
+
+  revalidatePath("/hammaddeler");
+  revalidatePath("/hareketler");
+  revalidatePath("/");
+  return { success: true };
+}
